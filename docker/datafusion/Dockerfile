@@ -6,4 +6,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y git python3 pytho
 
 RUN pip install pyarrow pandas matplotlib seaborn prettytable psutil datafusion duckdb
 
+COPY ../data/ /workspace/data/
+
 CMD ["tail", "-f", "/dev/null"]

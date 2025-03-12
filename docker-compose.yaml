@@ -7,7 +7,7 @@ services:
     stdin_open: true   
     tty: true    
     volumes:
-      - ./data:/mnt/shared
+      - ./shared:/workspace/shared
     restart: unless-stopped
     networks:
       - standard
