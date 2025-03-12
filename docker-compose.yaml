@@ -1,0 +1,17 @@
+services:
+  datafusion:
+    build:
+      context: .
+      dockerfile: ./docker/datafusion/Dockerfile 
+    container_name: datafusion
+    stdin_open: true   
+    tty: true    
+    volumes:
+      - ./data:/mnt/shared
+    restart: unless-stopped
+    networks:
+      - standard
+
+networks:
+  standard:
+    driver: bridge

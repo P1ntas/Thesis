@@ -1,0 +1,26 @@
+TPC-H:
+sudo apt install build-essential
+sudo apt install libc6-dev
+export DSS_QUERY=$(pwd)/queries
+export DSS_PATH=$(pwd)/here
+export DSS_CONFIG=$(pwd)
+SQLSERVER 
+make clean
+make
+./dbgen -f -s 10
+for i in {1..22}; do ./qgen -s 10 -N -p 0 $i > query${i}.sql; done
+
+TPC-DS:
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt update
+sudo apt install gcc-9
+make clean
+make CC=gcc-9
+./dsqgen \
+-DIRECTORY ../query_templates \
+-INPUT ../query_templates/templates.lst \
+-VERBOSE Y \
+-QUALIFY Y \
+-SCALE 10 \
+-DIALECT netezza \
+-OUTPUT_DIR ./here/
