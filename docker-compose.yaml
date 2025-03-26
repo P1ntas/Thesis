@@ -2,12 +2,12 @@ services:
   datafusion:
     build:
       context: .
-      dockerfile: ./docker/datafusion/Dockerfile 
+      dockerfile: ./docker/Dockerfile 
     container_name: datafusion
     stdin_open: true   
     tty: true    
     volumes:
-      - ./shared:/workspace/shared
+      - ./docker/shared:/workspace/shared
     restart: unless-stopped
     networks:
       - standard
