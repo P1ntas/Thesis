@@ -8,7 +8,6 @@ services:
     tty: true    
     volumes:
       - ./docker/shared:/workspace/shared
-    restart: unless-stopped
     networks:
       - standard
 
