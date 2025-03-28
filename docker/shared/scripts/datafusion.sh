@@ -10,3 +10,9 @@ else
     mkdir $RESULTS_DIR
 fi
 
+mkdir $PLOTS_DIR
+
+python3 tpch_datafusion.py
+python3 tpch_duckdb.py
+
+python3 plot.py
