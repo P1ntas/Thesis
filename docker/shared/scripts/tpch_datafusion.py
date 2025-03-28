@@ -147,20 +147,25 @@ def measure_query(query_number: int):
                 print("Memory sampling error:", e)
             time.sleep(0.1)
 
+    if query_number == 15:
+        query1 = ctx.sql(query_str1)
+        query2 = ctx.sql(query_str2)
+        query3 = ctx.sql(query_str3)
+    else:
+        query = ctx.sql(query_str)
+
     mem_thread = threading.Thread(target=sample_memory)
     mem_thread.start()
     io_before = process.io_counters()
     start_time = time.perf_counter()
 
     if query_number == 15:
-        query1 = ctx.sql(query_str1)
-        query2 = ctx.sql(query_str2)
-        query3 = ctx.sql(query_str3)
+
         query1.collect()
         result_batches = query2.collect()
         query3.collect()
     else:
-        query = ctx.sql(query_str)
+
         result_batches = query.collect()
 
     end_time = time.perf_counter()
@@ -212,7 +217,7 @@ for i in range(1, 23):
     }
     results.append(avg_metrics)
 
-csv_output_path = "../results/tpch.csv"
+csv_output_path = "../results/tpch_datafusion.csv"
 fieldnames = ["Query", "Latency (s)", "Peak Memory Usage (MB)", "Average Memory Usage (MB)", "IOPS (ops/s)"]
 with open(csv_output_path, "w", newline="") as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
