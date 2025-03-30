@@ -22,7 +22,6 @@ for stmt in load_statements:
         table_name = m.group(1)
         file_path = m.group(2)
         try:
-            print(f"Registering table {table_name} from {file_path}")
             ctx.register_parquet(table_name, file_path)
         except Exception as e:
             print(f"Error registering table {table_name} from {file_path}: {e}")
@@ -164,7 +163,6 @@ for idx, query in enumerate(queries, start=1):
                 "IOPS (ops/s)": total_iops / subquery_count
             }
         results.append(avg_metrics)
-        print(f"Query {idx} executed (special handling for multi-statement)")
     else:
         sum_latency = 0.0
         sum_peak_memory = 0.0

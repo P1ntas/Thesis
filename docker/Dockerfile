@@ -8,7 +8,4 @@ RUN pip install pyarrow pandas matplotlib numpy seaborn prettytable psutil dataf
 
 COPY shared/scripts /workspace/shared/scripts
 
-# RUN sh /workspace/shared/scripts/datafusion.sh
-
 CMD ["/bin/sh", "/workspace/shared/scripts/datafusion.sh"]
-#CMD ["tail", "-f", "/dev/null"]
