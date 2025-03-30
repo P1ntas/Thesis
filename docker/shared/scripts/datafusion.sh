@@ -14,5 +14,8 @@ mkdir $PLOTS_DIR
 
 python3 tpch_datafusion.py
 python3 tpch_duckdb.py
+python3 plot_tpch.py
 
-python3 plot.py
+python3 tpcds_duckdb.py
+python3 tpcds_datafusion.py
+python3 plot_tpcds.py

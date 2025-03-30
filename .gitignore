@@ -1,4 +1,4 @@
 data/*
 venv/*
 docker/shared/data/tpch/parquet/
-docker/shared/data/tpcds/db/
+docker/shared/data/tpcds/parquet/
