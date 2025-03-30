@@ -11,11 +11,13 @@ else
 fi
 
 mkdir $PLOTS_DIR
+mkdir "$PLOTS_DIR"/tpch
+mkdir "$PLOTS_DIR"/tpcds
 
 python3 tpch_datafusion.py
 python3 tpch_duckdb.py
-python3 plot_tpch.py
+python3 plots.py tpch
 
 python3 tpcds_duckdb.py
 python3 tpcds_datafusion.py
-python3 plot_tpcds.py
+python3 plots.py tpcds
