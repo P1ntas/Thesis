@@ -39,7 +39,7 @@ for metric in metrics:
     ax.set_ylabel(metric)
     ax.set_title(f"{prefix.upper()} {metric}")
     ax.set_xticks(x)
-    ax.set_xticklabels(merged_df["Query"], rotation=90, ha="center")  
+    ax.set_xticklabels(merged_df["Query"], rotation=-90, ha="center")  
     
     if prefix == "tpcds" and metric == "Latency (s)":
         ax.set_yscale('log')
