@@ -1,9 +1,9 @@
 from datafusion import SessionContext
-import time
-import psutil
 import os
-import threading
-import csv
+
+from common import measure_query_execution, read_tpch_queries
+from common import aggregate_benchmarks, write_csv_results
+
 
 os.makedirs("../results", exist_ok=True)
 
@@ -118,109 +118,30 @@ ctx.sql("""CREATE VIEW customer_renamed AS
       column8 AS c_none
     FROM customer;""")
 
-def measure_query(query_number: int):
+def measure_query(ctx, query_number: int):
     if query_number == 15:
-        file_path1 = f"../data/tpch/queries/{query_number}a.sql"
-        file_path2 = f"../data/tpch/queries/{query_number}b.sql"
-        file_path3 = f"../data/tpch/queries/{query_number}c.sql"
-        with open(file_path1, "r") as file:
-            query_str1 = file.read()
-        with open(file_path2, "r") as file:
-            query_str2 = file.read()
-        with open(file_path3, "r") as file:
-            query_str3 = file.read()
+        query_strs = read_tpch_queries(query_number)
+        query1 = ctx.sql(query_strs[0])
+        query2 = ctx.sql(query_strs[1])
+        query3 = ctx.sql(query_strs[2])
+        def exec_fn():
+            query1.collect()
+            result_batches = query2.collect()
+            query3.collect()
+            return result_batches
     else:
-        file_path = f"../data/tpch/queries/{query_number}.sql"
-        with open(file_path, "r") as file:
-            query_str = file.read()
-
-    process = psutil.Process(os.getpid())
-    memory_samples = []
-    stop_event = threading.Event()
-
-    def sample_memory():
-        while not stop_event.is_set():
-            try:
-                mem = process.memory_info().rss
-                memory_samples.append(mem)
-            except Exception as e:
-                print("Memory sampling error:", e)
-            time.sleep(0.1)
-
-    if query_number == 15:
-        query1 = ctx.sql(query_str1)
-        query2 = ctx.sql(query_str2)
-        query3 = ctx.sql(query_str3)
-    else:
+        query_str = read_tpch_queries(query_number)
         query = ctx.sql(query_str)
+        def exec_fn():
+            return query.collect()
+    result = measure_query_execution(exec_fn)
+    result["Query"] = query_number
+    return result
 
-    mem_thread = threading.Thread(target=sample_memory)
-    mem_thread.start()
-    io_before = process.io_counters()
-    start_time = time.perf_counter()
+queries = list(range(1, 23))
 
-    if query_number == 15:
-
-        query1.collect()
-        result_batches = query2.collect()
-        query3.collect()
-    else:
-
-        result_batches = query.collect()
-
-    end_time = time.perf_counter()
-    io_after = process.io_counters()
-    stop_event.set()
-    mem_thread.join()
-
-    latency = end_time - start_time
-    if memory_samples:
-        peak_memory = max(memory_samples)
-        avg_memory = sum(memory_samples) / len(memory_samples)
-    else:
-        peak_memory = avg_memory = 0
-
-    read_count = io_after.read_count - io_before.read_count
-    write_count = io_after.write_count - io_before.write_count
-    total_iops = (read_count + write_count) / latency if latency > 0 else 0
-
-    peak_memory_mb = peak_memory / (1024 * 1024)
-    avg_memory_mb = avg_memory / (1024 * 1024)
-
-    return {
-        "Query": query_number,
-        "Latency (s)": latency,
-        "Peak Memory Usage (MB)": peak_memory_mb,
-        "Average Memory Usage (MB)": avg_memory_mb,
-        "IOPS (ops/s)": total_iops
-    }
-
-results = []
-runs = 3
-for i in range(1, 23):
-    sum_latency = 0.0
-    sum_peak_memory = 0.0
-    sum_avg_memory = 0.0
-    sum_iops = 0.0
-    for _ in range(runs):
-        metrics = measure_query(i)
-        sum_latency += metrics["Latency (s)"]
-        sum_peak_memory += metrics["Peak Memory Usage (MB)"]
-        sum_avg_memory += metrics["Average Memory Usage (MB)"]
-        sum_iops += metrics["IOPS (ops/s)"]
-    avg_metrics = {
-        "Query": i,
-        "Latency (s)": sum_latency / runs,
-        "Peak Memory Usage (MB)": sum_peak_memory / runs,
-        "Average Memory Usage (MB)": sum_avg_memory / runs,
-        "IOPS (ops/s)": sum_iops / runs
-    }
-    results.append(avg_metrics)
+results = aggregate_benchmarks(queries, runs=3, measure_fn=measure_query, error_check=False)
 
 csv_output_path = "../results/tpch_datafusion.csv"
 fieldnames = ["Query", "Latency (s)", "Peak Memory Usage (MB)", "Average Memory Usage (MB)", "IOPS (ops/s)"]
-with open(csv_output_path, "w", newline="") as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
-    for row in results:
-        writer.writerow(row)
+write_csv_results(csv_output_path, fieldnames, results)

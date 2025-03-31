@@ -1,23 +1,14 @@
-# common.py
+import os
 import time
-import psutil
-import threading
 import gc
+import threading
+import psutil
+import time
+import csv
+import re
 
-def measure_query(query: str, exec_func):
-    """
-    Executes the provided query using the exec_func callback while sampling memory usage
-    and I/O counters. Returns a dictionary containing latency, peak and average memory usage (in MB),
-    and IOPS.
 
-    Parameters:
-      - query: The SQL query string.
-      - exec_func: A callback that accepts a query string and executes it (e.g., returns results).
-
-    Returns:
-      A dict with keys: "Latency (s)", "Peak Memory Usage (MB)", "Average Memory Usage (MB)", "IOPS (ops/s)"
-      If an error occurs during execution, an "error" key is also included.
-    """
+def measure_query_execution(execution_fn):
     process = psutil.Process(os.getpid())
     memory_samples = []
     stop_event = threading.Event()
@@ -28,7 +19,7 @@ def measure_query(query: str, exec_func):
                 mem = process.memory_info().rss
                 memory_samples.append(mem)
             except Exception as e:
-                print("Error sampling memory:", e)
+                print(f"Error sampling memory: {e}")
             time.sleep(0.1)
 
     mem_thread = threading.Thread(target=sample_memory)
@@ -37,16 +28,15 @@ def measure_query(query: str, exec_func):
     try:
         io_before = process.io_counters()
     except Exception as e:
-        print("Error fetching IO counters before query:", e)
+        print(f"Error fetching IO counters before query: {e}")
         io_before = None
 
     start_time = time.perf_counter()
 
     try:
-        # Execute the query using the provided callback
-        exec_func(query)
+        result = execution_fn()
     except Exception as e:
-        print("Error executing query:", e)
+        print(f"Error executing query: {e}")
         stop_event.set()
         mem_thread.join()
         return {
@@ -62,7 +52,7 @@ def measure_query(query: str, exec_func):
     try:
         io_after = process.io_counters()
     except Exception as e:
-        print("Error fetching IO counters after query:", e)
+        print(f"Error fetching IO counters after query: {e}")
         io_after = None
 
     stop_event.set()
@@ -91,5 +81,130 @@ def measure_query(query: str, exec_func):
         "Latency (s)": latency,
         "Peak Memory Usage (MB)": peak_memory_mb,
         "Average Memory Usage (MB)": avg_memory_mb,
-        "IOPS (ops/s)": total_iops
+        "IOPS (ops/s)": total_iops,
+        "result": result
+    }
+
+def read_tpch_queries(query_number: int):
+    if query_number == 15:
+        file_path1 = f"../data/tpch/queries/{query_number}a.sql"
+        file_path2 = f"../data/tpch/queries/{query_number}b.sql"
+        file_path3 = f"../data/tpch/queries/{query_number}c.sql"
+        with open(file_path1, "r") as file:
+            query_str1 = file.read()
+        with open(file_path2, "r") as file:
+            query_str2 = file.read()
+        with open(file_path3, "r") as file:
+            query_str3 = file.read()
+        return (query_str1, query_str2, query_str3)
+    else:
+        file_path = f"../data/tpch/queries/{query_number}.sql"
+        with open(file_path, "r") as file:
+            query_str = file.read()
+        return query_str
+
+def aggregate_runs_for_query(query, runs, measure_fn, error_check=False, sleep_between_run=0.5, latency_mode="average"):
+
+    sum_latency = 0.0
+    sum_peak_memory = 0.0
+    sum_avg_memory = 0.0
+    sum_iops = 0.0
+    valid_runs = 0
+
+    for _ in range(runs):
+        metrics = measure_fn(query)
+        if error_check and metrics.get("error"):
+            print(f"Error on query run: {metrics['error']}")
+            continue 
+        sum_latency += metrics["Latency (s)"]
+        sum_peak_memory += metrics["Peak Memory Usage (MB)"]
+        sum_avg_memory += metrics["Average Memory Usage (MB)"]
+        sum_iops += metrics["IOPS (ops/s)"]
+        valid_runs += 1
+        time.sleep(sleep_between_run)
+    
+    if valid_runs == 0:
+        return {
+            "Latency (s)": None,
+            "Peak Memory Usage (MB)": None,
+            "Average Memory Usage (MB)": None,
+            "IOPS (ops/s)": None
+        }
+    
+    if latency_mode == "average":
+        return {
+            "Latency (s)": sum_latency / valid_runs,
+            "Peak Memory Usage (MB)": sum_peak_memory / valid_runs,
+            "Average Memory Usage (MB)": sum_avg_memory / valid_runs,
+            "IOPS (ops/s)": sum_iops / valid_runs
+        }
+    elif latency_mode == "sum":
+        return {
+            "Latency (s)": sum_latency, 
+            "Peak Memory Usage (MB)": sum_peak_memory / valid_runs,
+            "Average Memory Usage (MB)": sum_avg_memory / valid_runs,
+            "IOPS (ops/s)": sum_iops / valid_runs
+        }
+
+def aggregate_benchmarks(queries, runs, measure_fn, get_query_label=lambda idx, query: idx,
+                         error_check=False, sleep_between_run=0.5, sleep_between_queries=1.0,
+                         special_queries=None, special_handler=None):
+    
+    results = []
+    for idx, query in enumerate(queries, start=1):
+        label = get_query_label(idx, query)
+        if special_queries is not None and idx in special_queries and special_handler is not None:
+            metrics = special_handler(idx, query, measure_fn, runs)
+        else:
+            metrics = aggregate_runs_for_query(query, runs, measure_fn, error_check, sleep_between_run, latency_mode="average")
+        metrics["Query"] = label
+        results.append(metrics)
+        time.sleep(sleep_between_queries)
+    return results
+
+def write_csv_results(csv_output_path, fieldnames, results):
+
+    with open(csv_output_path, "w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in results:
+            writer.writerow(row)
+
+def default_special_handler(idx, query, measure_fn, runs):
+
+    subqueries = re.split(r";\s*\nwith", query, flags=re.IGNORECASE)
+    for i in range(1, len(subqueries)):
+        subqueries[i] = "with " + subqueries[i].strip()
+    subqueries = [sq.strip().rstrip(";") for sq in subqueries if sq.strip()]
+
+    total_latency = 0.0
+    total_peak_memory = 0.0
+    total_avg_memory = 0.0
+    total_iops = 0.0
+    subquery_count = 0
+
+    for subquery in subqueries:
+        metrics = measure_fn(subquery)
+        if metrics.get("error"):
+            print(f"Error executing a subquery in query {idx}: {metrics['error']}")
+            continue
+        total_latency += metrics["Latency (s)"]
+        total_peak_memory += metrics["Peak Memory Usage (MB)"]
+        total_avg_memory += metrics["Average Memory Usage (MB)"]
+        total_iops += metrics["IOPS (ops/s)"]
+        subquery_count += 1
+        time.sleep(0.5)
+
+    if subquery_count == 0:
+        return {
+            "Latency (s)": None,
+            "Peak Memory Usage (MB)": None,
+            "Average Memory Usage (MB)": None,
+            "IOPS (ops/s)": None
+        }
+    return {
+        "Latency (s)": total_latency, 
+        "Peak Memory Usage (MB)": total_peak_memory / subquery_count,
+        "Average Memory Usage (MB)": total_avg_memory / subquery_count,
+        "IOPS (ops/s)": total_iops / subquery_count
     }
