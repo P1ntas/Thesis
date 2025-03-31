@@ -3,7 +3,7 @@ services:
     build:
       context: ./docker
       dockerfile: ./Dockerfile 
-    container_name: datafusion
+    container_name: benchmark
     stdin_open: true   
     tty: true    
     volumes:

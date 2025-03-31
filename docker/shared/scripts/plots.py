@@ -26,7 +26,7 @@ width = 0.35
 x = np.arange(len(merged_df["Query"])) 
 
 for metric in metrics:
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(20, 6)) 
     
     datafusion_vals = merged_df[f"{metric}_DF"]
     duckdb_vals = merged_df[f"{metric}_DuckDB"]
@@ -34,11 +34,19 @@ for metric in metrics:
     bars1 = ax.bar(x - width/2, datafusion_vals, width, label="DataFusion")
     bars2 = ax.bar(x + width/2, duckdb_vals, width, label="DuckDB")
     
+    ax.margins(x=0.005)
     ax.set_xlabel("Query")
     ax.set_ylabel(metric)
     ax.set_title(f"{prefix.upper()} {metric}")
     ax.set_xticks(x)
-    ax.set_xticklabels(merged_df["Query"])
+    ax.set_xticklabels(merged_df["Query"], rotation=90, ha="center")  
+    
+    # For TPC-DS latency, use a logarithmic y-scale.
+    if prefix == "tpcds" and metric == "Latency (s)":
+        ax.set_yscale('log')
+        ax.set_ylabel(metric + " (log scale)")
+    
+    # Add legend to indicate colors for each engine.
     ax.legend()
     
     for bar in bars1 + bars2:

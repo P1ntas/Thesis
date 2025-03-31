@@ -6,4 +6,4 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y git python3 pytho
 
 RUN pip install pyarrow pandas matplotlib numpy seaborn prettytable psutil datafusion duckdb
 
-CMD ["/bin/sh", "/workspace/shared/scripts/datafusion.sh"]
+CMD ["/bin/sh", "/workspace/shared/scripts/startup.sh"]
