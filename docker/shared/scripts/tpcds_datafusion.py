@@ -1,10 +1,7 @@
 from datafusion import SessionContext
 import os
 import re
-
-from common import measure_query_execution
-from common import aggregate_benchmarks, write_csv_results, default_special_handler
-
+from common import measure_query_execution, aggregate_benchmarks, write_csv_results, default_special_handler
 
 os.makedirs("../results", exist_ok=True)
 
@@ -14,7 +11,6 @@ with open('../data/tpcds/parquet/load.sql', 'r') as load_file:
     load_sql = load_file.read()
 
 load_statements = [stmt.strip() for stmt in load_sql.split(';') if stmt.strip()]
-
 for stmt in load_statements:
     m = re.search(r"COPY\s+(\S+)\s+FROM\s+'([^']+)'", stmt, re.IGNORECASE)
     if m:
@@ -39,7 +35,7 @@ def execute_query(ctx, query: str):
         result = ctx.sql(stmt).collect()
     return result
 
-def measure_query(ctx, query: str):
+def measure_query(query: str):
     def exec_fn():
         return execute_query(ctx, query)
     return measure_query_execution(exec_fn)

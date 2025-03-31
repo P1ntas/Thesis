@@ -41,12 +41,10 @@ for metric in metrics:
     ax.set_xticks(x)
     ax.set_xticklabels(merged_df["Query"], rotation=90, ha="center")  
     
-    # For TPC-DS latency, use a logarithmic y-scale.
     if prefix == "tpcds" and metric == "Latency (s)":
         ax.set_yscale('log')
         ax.set_ylabel(metric + " (log scale)")
     
-    # Add legend to indicate colors for each engine.
     ax.legend()
     
     for bar in bars1 + bars2:

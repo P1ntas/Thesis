@@ -3,10 +3,8 @@ import time
 import gc
 import threading
 import psutil
-import time
 import csv
 import re
-
 
 def measure_query_execution(execution_fn):
     process = psutil.Process(os.getpid())
@@ -104,7 +102,6 @@ def read_tpch_queries(query_number: int):
         return query_str
 
 def aggregate_runs_for_query(query, runs, measure_fn, error_check=False, sleep_between_run=0.5, latency_mode="average"):
-
     sum_latency = 0.0
     sum_peak_memory = 0.0
     sum_avg_memory = 0.0
@@ -149,7 +146,6 @@ def aggregate_runs_for_query(query, runs, measure_fn, error_check=False, sleep_b
 def aggregate_benchmarks(queries, runs, measure_fn, get_query_label=lambda idx, query: idx,
                          error_check=False, sleep_between_run=0.5, sleep_between_queries=1.0,
                          special_queries=None, special_handler=None):
-    
     results = []
     for idx, query in enumerate(queries, start=1):
         label = get_query_label(idx, query)
@@ -163,7 +159,6 @@ def aggregate_benchmarks(queries, runs, measure_fn, get_query_label=lambda idx, 
     return results
 
 def write_csv_results(csv_output_path, fieldnames, results):
-
     with open(csv_output_path, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -171,7 +166,6 @@ def write_csv_results(csv_output_path, fieldnames, results):
             writer.writerow(row)
 
 def default_special_handler(idx, query, measure_fn, runs):
-
     subqueries = re.split(r";\s*\nwith", query, flags=re.IGNORECASE)
     for i in range(1, len(subqueries)):
         subqueries[i] = "with " + subqueries[i].strip()

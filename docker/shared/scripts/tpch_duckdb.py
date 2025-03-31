@@ -1,10 +1,7 @@
 import duckdb
 import os
-import csv
-
 from common import measure_query_execution, read_tpch_queries
 from common import aggregate_benchmarks, write_csv_results
-
 
 os.makedirs("../results", exist_ok=True)
 

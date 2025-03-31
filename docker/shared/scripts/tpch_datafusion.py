@@ -1,9 +1,7 @@
 from datafusion import SessionContext
 import os
-
 from common import measure_query_execution, read_tpch_queries
 from common import aggregate_benchmarks, write_csv_results
-
 
 os.makedirs("../results", exist_ok=True)
 
@@ -118,7 +116,7 @@ ctx.sql("""CREATE VIEW customer_renamed AS
       column8 AS c_none
     FROM customer;""")
 
-def measure_query(ctx, query_number: int):
+def measure_query(query_number: int):
     if query_number == 15:
         query_strs = read_tpch_queries(query_number)
         query1 = ctx.sql(query_strs[0])
