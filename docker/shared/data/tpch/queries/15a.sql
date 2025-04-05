@@ -3,7 +3,7 @@ create view revenue_view (supplier_no, total_revenue) as
 		l_suppkey,
 		sum(l_extendedprice * (1 - l_discount))
 	from
-		lineitem_renamed
+		lineitem
 	where
 		l_shipdate >= date '1996-01-01'
 		and l_shipdate < date '1996-04-01'

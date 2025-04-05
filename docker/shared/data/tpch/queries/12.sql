@@ -13,8 +13,8 @@ select
 		else 0
 	end) as low_line_count
 from
-	orders_renamed,
-	lineitem_renamed
+	orders,
+	lineitem
 where
 	o_orderkey = l_orderkey
 	and l_shipmode in ('MAIL', 'SHIP')

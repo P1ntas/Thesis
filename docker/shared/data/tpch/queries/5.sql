@@ -2,12 +2,12 @@ select
 	n_name,
 	sum(l_extendedprice * (1 - l_discount)) as revenue
 from
-	customer_renamed,
-	orders_renamed,
-	lineitem_renamed,
-	supplier_renamed,
-	nation_renamed,
-	region_renamed
+	customer,
+	orders,
+	lineitem,
+	supplier,
+	nation,
+	region
 where
 	c_custkey = o_custkey
 	and l_orderkey = o_orderkey

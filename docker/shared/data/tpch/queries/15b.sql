@@ -5,7 +5,7 @@ select
 	s_phone,
 	total_revenue
 from
-	supplier_renamed,
+	supplier,
 	revenue_view
 where
 	s_suppkey = supplier_no

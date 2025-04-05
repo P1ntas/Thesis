@@ -8,10 +8,10 @@ select
 	c_phone,
 	c_comment
 from
-	customer_renamed,
-	orders_renamed,
-	lineitem_renamed,
-	nation_renamed
+	customer,
+	orders,
+	lineitem,
+	nation
 where
 	c_custkey = o_custkey
 	and l_orderkey = o_orderkey
