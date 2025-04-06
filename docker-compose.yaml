@@ -1,5 +1,5 @@
 services:
-  datafusion:
+  benchmark:
     build:
       context: ./docker
       dockerfile: ./Dockerfile 
