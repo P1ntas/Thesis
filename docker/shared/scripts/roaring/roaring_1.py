@@ -8,7 +8,7 @@ from datafusion import SessionContext
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from common import measure_query_execution, read_tpch_queries, write_csv_results
+from common import measure_query_execution, write_csv_results
 
 os.makedirs("../results", exist_ok=True)
 
