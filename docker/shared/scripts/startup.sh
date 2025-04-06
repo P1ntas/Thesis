@@ -8,6 +8,8 @@ RESULTS_ROARING_DIR="../results/roaring"
 $ROARING_DIR="./roaring"
 $DATA_TPCH_DIR="../data/tpch/parquet/"
 $DATA_TPCDS_DIR="../data/tpcds/parquet/"
+
+
 if [ -d "$RESULTS_DIR" ]; then
   rm -rf "$RESULTS_DIR"/*
 else
