@@ -1,5 +1,4 @@
-data/*
-venv/*
-docker/shared/data/tpch/parquet/*
-docker/shared/data/tpcds/parquet/*
+env/*
+docker/shared/data/tpch/parquet/*.parquet
+docker/shared/data/tpcds/parquet/*.parquet
 docker/shared/scripts/__pycache__/*

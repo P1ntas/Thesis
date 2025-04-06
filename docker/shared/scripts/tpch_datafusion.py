@@ -49,5 +49,5 @@ queries = list(range(1, 23))
 results = aggregate_benchmarks(queries, runs=3, measure_fn=measure_query, error_check=False)
 
 csv_output_path = "../results/tpch_datafusion.csv"
-fieldnames = ["Query", "Latency (s)", "Peak Memory Usage (MB)", "Average Memory Usage (MB)", "IOPS (ops/s)"]
+fieldnames = ["Query", "Latency (s)", "CPU Usage (%)", "Peak Memory Usage (MB)", "Average Memory Usage (MB)", "IOPS (ops/s)"]
 write_csv_results(csv_output_path, fieldnames, results)

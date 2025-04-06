@@ -20,44 +20,65 @@ df_duckdb = pd.read_csv(f"../results/{prefix}_duckdb.csv")
 
 merged_df = pd.merge(df_datafusion, df_duckdb, on="Query", suffixes=("_DF", "_DuckDB"))
 
-metrics = ["Latency (s)", "Peak Memory Usage (MB)", "Average Memory Usage (MB)", "IOPS (ops/s)"]
+metrics = [
+    "Latency (s)",
+    "Peak Memory Usage (MB)",
+    "Average Memory Usage (MB)",
+    "IOPS (ops/s)",
+    "CPU Usage (%)"
+]
 
-width = 0.35  
-x = np.arange(len(merged_df["Query"])) 
+width = 0.35
+x = np.arange(len(merged_df["Query"]))
 
 for metric in metrics:
-    fig, ax = plt.subplots(figsize=(20, 6)) 
-    
-    datafusion_vals = merged_df[f"{metric}_DF"]
-    duckdb_vals = merged_df[f"{metric}_DuckDB"]
-    
-    bars1 = ax.bar(x - width/2, datafusion_vals, width, label="DataFusion")
-    bars2 = ax.bar(x + width/2, duckdb_vals, width, label="DuckDB")
-    
+    fig, ax = plt.subplots(figsize=(20, 6))
+
+    datafusion_vals = merged_df.get(f"{metric}_DF")
+    duckdb_vals = merged_df.get(f"{metric}_DuckDB")
+
+    if datafusion_vals is None or duckdb_vals is None:
+        print(f"Skipping metric '{metric}' because it is not in both DataFusion and DuckDB results.")
+        plt.close(fig)
+        continue
+
+    bars1 = ax.bar(x - width / 2, datafusion_vals, width, label="DataFusion")
+    bars2 = ax.bar(x + width / 2, duckdb_vals, width, label="DuckDB")
+
     ax.margins(x=0.005)
     ax.set_xlabel("Query")
     ax.set_ylabel(metric)
     ax.set_title(f"{prefix.upper()} {metric}")
     ax.set_xticks(x)
-    ax.set_xticklabels(merged_df["Query"], rotation=-90, ha="center")  
-    
+    ax.set_xticklabels(merged_df["Query"], rotation=-90, ha="center")
+
     if prefix == "tpcds" and metric == "Latency (s)":
         ax.set_yscale('log')
         ax.set_ylabel(metric + " (log scale)")
-    
+
     ax.legend()
-    
+
     for bar in bars1 + bars2:
         height = bar.get_height()
-        ax.annotate(f'{height:.2f}',
-                    xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 3),  
-                    textcoords="offset points",
-                    ha='center', va='bottom', fontsize=8)
-    
+        ax.annotate(
+            f'{height:.2f}',
+            xy=(bar.get_x() + bar.get_width() / 2, height),
+            xytext=(0, 3),
+            textcoords="offset points",
+            ha='center',
+            va='bottom',
+            fontsize=8
+        )
+
     plt.tight_layout()
-    
-    metric_filename = metric.replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
-    output_path = f"../results/plots/{prefix}/{metric_filename}.png"
+
+    metric_filename = (metric.replace(" ", "_")
+                             .replace("(", "")
+                             .replace(")", "")
+                             .replace("/", "_"))
+    output_dir = f"../results/plots/{prefix}"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = f"{output_dir}/{metric_filename}.png"
+
     plt.savefig(output_path)
     plt.show()

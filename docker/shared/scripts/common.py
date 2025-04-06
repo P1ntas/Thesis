@@ -29,6 +29,7 @@ def measure_query_execution(execution_fn):
         print(f"Error fetching IO counters before query: {e}")
         io_before = None
 
+    cpu_times_before = process.cpu_times()
     start_time = time.perf_counter()
 
     try:
@@ -42,10 +43,12 @@ def measure_query_execution(execution_fn):
             "Peak Memory Usage (MB)": None,
             "Average Memory Usage (MB)": None,
             "IOPS (ops/s)": None,
+            "CPU Usage (%)": None,
             "error": str(e)
         }
 
     end_time = time.perf_counter()
+    cpu_times_after = process.cpu_times()
 
     try:
         io_after = process.io_counters()
@@ -57,21 +60,28 @@ def measure_query_execution(execution_fn):
     mem_thread.join()
 
     latency = end_time - start_time
+
     if memory_samples:
         peak_memory = max(memory_samples)
         avg_memory = sum(memory_samples) / len(memory_samples)
     else:
-        peak_memory = avg_memory = 0
+        peak_memory = 0
+        avg_memory = 0
+    peak_memory_mb = peak_memory / (1024 * 1024)
+    avg_memory_mb = avg_memory / (1024 * 1024)
 
-    if io_before is not None and io_after is not None:
+    if io_before and io_after and latency > 0:
         read_count = io_after.read_count - io_before.read_count
         write_count = io_after.write_count - io_before.write_count
-        total_iops = (read_count + write_count) / latency if latency > 0 else 0
+        total_iops = (read_count + write_count) / latency
     else:
         total_iops = None
 
-    peak_memory_mb = peak_memory / (1024 * 1024)
-    avg_memory_mb = avg_memory / (1024 * 1024)
+    used_cpu_time = (
+        (cpu_times_after.user + cpu_times_after.system)
+        - (cpu_times_before.user + cpu_times_before.system)
+    )
+    cpu_usage_percent = (used_cpu_time / latency) * 100 if latency > 0 else None
 
     gc.collect()
 
@@ -80,6 +90,7 @@ def measure_query_execution(execution_fn):
         "Peak Memory Usage (MB)": peak_memory_mb,
         "Average Memory Usage (MB)": avg_memory_mb,
         "IOPS (ops/s)": total_iops,
+        "CPU Usage (%)": cpu_usage_percent,
         "result": result
     }
 
@@ -101,58 +112,79 @@ def read_tpch_queries(query_number: int):
             query_str = file.read()
         return query_str
 
-def aggregate_runs_for_query(query, runs, measure_fn, error_check=False, sleep_between_run=0.5, latency_mode="average"):
+def aggregate_runs_for_query(query, runs, measure_fn,
+                             error_check=False,
+                             sleep_between_run=0.5,
+                             latency_mode="average"):
     sum_latency = 0.0
     sum_peak_memory = 0.0
     sum_avg_memory = 0.0
     sum_iops = 0.0
+    sum_cpu_usage = 0.0
     valid_runs = 0
 
     for _ in range(runs):
         metrics = measure_fn(query)
         if error_check and metrics.get("error"):
             print(f"Error on query run: {metrics['error']}")
-            continue 
+            continue
         sum_latency += metrics["Latency (s)"]
         sum_peak_memory += metrics["Peak Memory Usage (MB)"]
         sum_avg_memory += metrics["Average Memory Usage (MB)"]
-        sum_iops += metrics["IOPS (ops/s)"]
+        if metrics["IOPS (ops/s)"] is not None:
+            sum_iops += metrics["IOPS (ops/s)"]
+        if metrics["CPU Usage (%)"] is not None:
+            sum_cpu_usage += metrics["CPU Usage (%)"]
         valid_runs += 1
         time.sleep(sleep_between_run)
-    
+
     if valid_runs == 0:
         return {
             "Latency (s)": None,
             "Peak Memory Usage (MB)": None,
             "Average Memory Usage (MB)": None,
-            "IOPS (ops/s)": None
+            "IOPS (ops/s)": None,
+            "CPU Usage (%)": None
         }
-    
+
     if latency_mode == "average":
         return {
             "Latency (s)": sum_latency / valid_runs,
             "Peak Memory Usage (MB)": sum_peak_memory / valid_runs,
             "Average Memory Usage (MB)": sum_avg_memory / valid_runs,
-            "IOPS (ops/s)": sum_iops / valid_runs
+            "IOPS (ops/s)": sum_iops / valid_runs,
+            "CPU Usage (%)": sum_cpu_usage / valid_runs
         }
     elif latency_mode == "sum":
         return {
-            "Latency (s)": sum_latency, 
+            "Latency (s)": sum_latency,
             "Peak Memory Usage (MB)": sum_peak_memory / valid_runs,
             "Average Memory Usage (MB)": sum_avg_memory / valid_runs,
-            "IOPS (ops/s)": sum_iops / valid_runs
+            "IOPS (ops/s)": sum_iops / valid_runs,
+            "CPU Usage (%)": sum_cpu_usage / valid_runs
         }
 
-def aggregate_benchmarks(queries, runs, measure_fn, get_query_label=lambda idx, query: idx,
-                         error_check=False, sleep_between_run=0.5, sleep_between_queries=1.0,
-                         special_queries=None, special_handler=None):
+def aggregate_benchmarks(queries,
+                         runs,
+                         measure_fn,
+                         get_query_label=lambda idx, query: idx,
+                         error_check=False,
+                         sleep_between_run=0.5,
+                         sleep_between_queries=1.0,
+                         special_queries=None,
+                         special_handler=None):
     results = []
     for idx, query in enumerate(queries, start=1):
         label = get_query_label(idx, query)
-        if special_queries is not None and idx in special_queries and special_handler is not None:
+        if special_queries and idx in special_queries and special_handler:
             metrics = special_handler(idx, query, measure_fn, runs)
         else:
-            metrics = aggregate_runs_for_query(query, runs, measure_fn, error_check, sleep_between_run, latency_mode="average")
+            metrics = aggregate_runs_for_query(query,
+                                               runs,
+                                               measure_fn,
+                                               error_check,
+                                               sleep_between_run,
+                                               latency_mode="average")
         metrics["Query"] = label
         results.append(metrics)
         time.sleep(sleep_between_queries)
@@ -166,7 +198,7 @@ def write_csv_results(csv_output_path, fieldnames, results):
             writer.writerow(row)
 
 def default_special_handler(idx, query, measure_fn, runs):
-    subqueries = re.split(r";\s*\nwith", query, flags=re.IGNORECASE)
+    subqueries = re.split(r";\\s*\\nwith", query, flags=re.IGNORECASE)
     for i in range(1, len(subqueries)):
         subqueries[i] = "with " + subqueries[i].strip()
     subqueries = [sq.strip().rstrip(";") for sq in subqueries if sq.strip()]
@@ -175,6 +207,7 @@ def default_special_handler(idx, query, measure_fn, runs):
     total_peak_memory = 0.0
     total_avg_memory = 0.0
     total_iops = 0.0
+    total_cpu_usage = 0.0
     subquery_count = 0
 
     for subquery in subqueries:
@@ -185,7 +218,10 @@ def default_special_handler(idx, query, measure_fn, runs):
         total_latency += metrics["Latency (s)"]
         total_peak_memory += metrics["Peak Memory Usage (MB)"]
         total_avg_memory += metrics["Average Memory Usage (MB)"]
-        total_iops += metrics["IOPS (ops/s)"]
+        if metrics["IOPS (ops/s)"] is not None:
+            total_iops += metrics["IOPS (ops/s)"]
+        if metrics["CPU Usage (%)"] is not None:
+            total_cpu_usage += metrics["CPU Usage (%)"]
         subquery_count += 1
         time.sleep(0.5)
 
@@ -194,11 +230,13 @@ def default_special_handler(idx, query, measure_fn, runs):
             "Latency (s)": None,
             "Peak Memory Usage (MB)": None,
             "Average Memory Usage (MB)": None,
-            "IOPS (ops/s)": None
+            "IOPS (ops/s)": None,
+            "CPU Usage (%)": None
         }
     return {
-        "Latency (s)": total_latency, 
+        "Latency (s)": total_latency,
         "Peak Memory Usage (MB)": total_peak_memory / subquery_count,
         "Average Memory Usage (MB)": total_avg_memory / subquery_count,
-        "IOPS (ops/s)": total_iops / subquery_count
+        "IOPS (ops/s)": total_iops / subquery_count,
+        "CPU Usage (%)": total_cpu_usage / subquery_count
     }
