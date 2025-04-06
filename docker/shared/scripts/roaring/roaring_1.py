@@ -47,7 +47,7 @@ def process_lineitem_parquet(file_path, batch_size=100000,
     return filtered_df, returnflag_index, linestatus_index
 
 def bitmap_memory_size(*bitmap_dicts):
-    return sum(len(bitmap.serialize()) for bitmap_dict in bitmap_dicts for bitmap in bitmap_dict.values())
+    return sum(len(bitmap.serialize() / (1024 * 1024)) for bitmap_dict in bitmap_dicts for bitmap in bitmap_dict.values())
 
 def prepare_duckdb(filtered_df, query_file):
     for col in ['l_extendedprice', 'l_quantity', 'l_discount', 'l_tax']:
@@ -113,10 +113,10 @@ if __name__ == "__main__":
     duckdb_fieldnames = [
         "Query", "Latency (s)", "Peak Memory Usage (MB)",
         "Average Memory Usage (MB)", "IOPS (ops/s)",
-        "Roaring Bitmap Size (bytes)"
+        "Roaring Bitmap Size (MB)"
     ]
     duckdb_csv_result = {k: v for k, v in result_duckdb.items() if k in duckdb_fieldnames}
-    duckdb_csv_result["Roaring Bitmap Size (bytes)"] = bitmap_size_bytes
+    duckdb_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
 
     duckdb_results_csv_path = "../results/roaring/duckdb/roaring_1.csv"
     os.makedirs(os.path.dirname(duckdb_results_csv_path), exist_ok=True)
@@ -128,10 +128,10 @@ if __name__ == "__main__":
     datafusion_fieldnames = [
         "Query", "Latency (s)", "CPU Usage (%)", "Peak Memory Usage (MB)",
         "Average Memory Usage (MB)", "IOPS (ops/s)",
-        "Roaring Bitmap Size (bytes)"
+        "Roaring Bitmap Size (MB)"
     ]
     datafusion_csv_result = {k: v for k, v in result_datafusion.items() if k in datafusion_fieldnames}
-    datafusion_csv_result["Roaring Bitmap Size (bytes)"] = bitmap_size_bytes
+    datafusion_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
 
     datafusion_results_csv_path = "../results/roaring/datafusion/roaring_1.csv"
     os.makedirs(os.path.dirname(datafusion_results_csv_path), exist_ok=True)
