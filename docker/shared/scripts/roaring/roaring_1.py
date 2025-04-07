@@ -6,10 +6,14 @@ import pandas as pd
 from pyroaring import BitMap
 from datafusion import SessionContext
 
+from common_roaring import (
+    bitmap_memory_size,
+    measure_query_duckdb,
+    measure_query_datafusion,
+    write_csv_results
+)
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from common import measure_query_execution, write_csv_results
-
 os.makedirs("../results", exist_ok=True)
 
 def process_lineitem_parquet(file_path, batch_size=100000,
@@ -46,13 +50,6 @@ def process_lineitem_parquet(file_path, batch_size=100000,
     filtered_df = pd.concat(filtered_batches, ignore_index=True) if filtered_batches else pd.DataFrame()
     return filtered_df, returnflag_index, linestatus_index
 
-def bitmap_memory_size(*bitmap_dicts):
-    total_size = 0
-    for bitmap_dict in bitmap_dicts:
-        for bitmap in bitmap_dict.values():
-            total_size += len(bitmap.serialize()) 
-    return total_size / (1024.0 * 1024.0)
-
 def prepare_duckdb(filtered_df, query_file):
     for col in ['l_extendedprice', 'l_quantity', 'l_discount', 'l_tax']:
         if col in filtered_df.columns:
@@ -68,14 +65,6 @@ def prepare_duckdb(filtered_df, query_file):
         query = f.read()
 
     return con, query
-
-def measure_query_duckdb(query_number: int, con, query):
-    def exec_fn():
-        return con.execute(query).fetchall()
-
-    result = measure_query_execution(exec_fn)
-    result["Query"] = query_number
-    return result
 
 def prepare_datafusion(filtered_df, query_file):
     for col in ['l_extendedprice', 'l_quantity', 'l_discount', 'l_tax']:
@@ -94,15 +83,6 @@ def prepare_datafusion(filtered_df, query_file):
 
     return ctx, query
 
-def measure_query_datafusion(query_number: int, ctx, query_str):
-    def exec_fn():
-        df = ctx.sql(query_str)
-        return df.collect()  
-
-    result = measure_query_execution(exec_fn)
-    result["Query"] = query_number
-    return result
-
 if __name__ == "__main__":
     file_path = '../data/tpch/parquet/lineitem.parquet'
     filtered_df, returnflag_idx, linestatus_idx = process_lineitem_parquet(file_path)
@@ -114,29 +94,24 @@ if __name__ == "__main__":
     con_duckdb, duckdb_query = prepare_duckdb(filtered_df, sql_query_file)
     result_duckdb = measure_query_duckdb(1, con_duckdb, duckdb_query)
 
-    duckdb_fieldnames = [
-        "Query", "Latency (s)", "Peak Memory Usage (MB)",
-        "Average Memory Usage (MB)", "IOPS (ops/s)",
-        "Roaring Bitmap Size (MB)"
-    ]
-    duckdb_csv_result = {k: v for k, v in result_duckdb.items() if k in duckdb_fieldnames}
-    duckdb_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
-
-    duckdb_results_csv_path = "../results/roaring/duckdb/roaring_1.csv"
-    os.makedirs(os.path.dirname(duckdb_results_csv_path), exist_ok=True)
-    write_csv_results(duckdb_results_csv_path, duckdb_fieldnames, [duckdb_csv_result])
-
-    ctx_datafusion, datafusion_query = prepare_datafusion(filtered_df, sql_query_file)
-    result_datafusion = measure_query_datafusion(1, ctx_datafusion, datafusion_query)
-
-    datafusion_fieldnames = [
+    fieldnames = [
         "Query", "Latency (s)", "CPU Usage (%)", "Peak Memory Usage (MB)",
         "Average Memory Usage (MB)", "IOPS (ops/s)",
         "Roaring Bitmap Size (MB)"
     ]
-    datafusion_csv_result = {k: v for k, v in result_datafusion.items() if k in datafusion_fieldnames}
+    duckdb_csv_result = {k: v for k, v in result_duckdb.items() if k in fieldnames}
+    duckdb_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
+
+    duckdb_results_csv_path = "../results/roaring/duckdb/roaring_tpch.csv"
+    os.makedirs(os.path.dirname(duckdb_results_csv_path), exist_ok=True)
+    write_csv_results(duckdb_results_csv_path, fieldnames, [duckdb_csv_result])
+
+    ctx_datafusion, datafusion_query = prepare_datafusion(filtered_df, sql_query_file)
+    result_datafusion = measure_query_datafusion(1, ctx_datafusion, datafusion_query)
+
+    datafusion_csv_result = {k: v for k, v in result_datafusion.items() if k in fieldnames}
     datafusion_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
 
-    datafusion_results_csv_path = "../results/roaring/datafusion/roaring_1.csv"
+    datafusion_results_csv_path = "../results/roaring/datafusion/roaring_tpch.csv"
     os.makedirs(os.path.dirname(datafusion_results_csv_path), exist_ok=True)
-    write_csv_results(datafusion_results_csv_path, datafusion_fieldnames, [datafusion_csv_result])
+    write_csv_results(datafusion_results_csv_path, fieldnames, [datafusion_csv_result])
