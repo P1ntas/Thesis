@@ -43,3 +43,5 @@ fi
 if [ -d "$DATA_TPCDS_DIR" ]; then
   rm -f "$DATA_TPCDS_DIR"/filtered_*.parquet
 fi
+
+python3 "$ROARING_DIR"/plots_roaring.py
