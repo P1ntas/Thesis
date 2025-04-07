@@ -47,7 +47,11 @@ def process_lineitem_parquet(file_path, batch_size=100000,
     return filtered_df, returnflag_index, linestatus_index
 
 def bitmap_memory_size(*bitmap_dicts):
-    return sum(len(bitmap.serialize() / (1024 * 1024)) for bitmap_dict in bitmap_dicts for bitmap in bitmap_dict.values())
+    total_size = 0
+    for bitmap_dict in bitmap_dicts:
+        for bitmap in bitmap_dict.values():
+            total_size += len(bitmap.serialize()) 
+    return total_size / (1024.0 * 1024.0)
 
 def prepare_duckdb(filtered_df, query_file):
     for col in ['l_extendedprice', 'l_quantity', 'l_discount', 'l_tax']:
