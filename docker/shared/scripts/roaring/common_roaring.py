@@ -48,13 +48,11 @@ def measure_query_datafusion(query_number: int, ctx: SessionContext, query_str: 
     return averaged_result
 
 def write_csv_results(csv_path, fieldnames, rows):
-    file_exists = os.path.exists(csv_path)
+    file_is_empty = (not os.path.exists(csv_path)) or (os.path.getsize(csv_path) == 0)
     with open(csv_path, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
-
-        if not file_exists:
+        if file_is_empty:
             writer.writeheader()
-
         writer.writerows(rows)
 
 def _aggregate_runs(runs_data):

@@ -41,6 +41,7 @@ python3 ./roaring/roaring_8.py
 python3 ./roaring/roaring_10.py
 python3 ./roaring/roaring_12.py
 python3 ./roaring/roaring_22.py
+python3 ./roaring/plots_roaring.py
 
 if [ -d "$DATA_TPCH_DIR" ]; then
   rm -f "$DATA_TPCH_DIR"/filtered_*.parquet

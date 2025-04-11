@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import duckdb
 import pyarrow.parquet as pq
 import pandas as pd
@@ -25,18 +26,24 @@ def process_lineitem_parquet(file_path, batch_size=100000):
     filtered_batches = []
     global_offset = 0
 
+    original_size_bytes = 0
+
     start_date = pd.to_datetime("1994-01-01")
     end_date = pd.to_datetime("1995-01-01")
     discount_low = 0.05
     discount_high = 0.05
     quantity_threshold = 24
 
+    bitmap_start_time = time.perf_counter()
+
     pf = pq.ParquetFile(file_path)
     for batch in pf.iter_batches(batch_size=batch_size):
         df_batch = batch.to_pandas()
         n_rows = len(df_batch)
 
-        df_batch["l_shipdate"] = pd.to_datetime(df_batch["l_shipdate"])
+        for col in ["l_shipdate", "l_discount", "l_quantity", "l_extendedprice"]:
+            if col in df_batch.columns:
+                original_size_bytes += df_batch[col].memory_usage(deep=True)
 
         for col, index_dict in [
             ("l_shipdate", l_shipdate_index),
@@ -53,28 +60,27 @@ def process_lineitem_parquet(file_path, batch_size=100000):
                 else:
                     index_dict[val].update(global_indices)
 
+        df_batch["l_shipdate"] = pd.to_datetime(df_batch["l_shipdate"])
+
         mask = (
-            (df_batch["l_shipdate"] >= start_date)
-            & (df_batch["l_shipdate"] < end_date)
-            & (df_batch["l_discount"] >= discount_low)
-            & (df_batch["l_discount"] <= discount_high)
-            & (df_batch["l_quantity"] < quantity_threshold)
+            (df_batch["l_shipdate"] >= start_date) &
+            (df_batch["l_shipdate"] < end_date) &
+            (df_batch["l_discount"] >= discount_low) &
+            (df_batch["l_discount"] <= discount_high) &
+            (df_batch["l_quantity"] < quantity_threshold)
         )
         batch_filtered = df_batch.loc[mask, ["l_extendedprice", "l_discount", "l_quantity", "l_shipdate"]]
         filtered_batches.append(batch_filtered)
 
         global_offset += n_rows
-        del df_batch  
+        del df_batch
+
+    bitmap_end_time = time.perf_counter()
+    bitmap_creation_time = bitmap_end_time - bitmap_start_time
 
     filtered_df = pd.concat(filtered_batches, ignore_index=True) if filtered_batches else pd.DataFrame()
-    del filtered_batches 
-    return (
-        filtered_df,
-        l_shipdate_index,
-        l_discount_index,
-        l_quantity_index,
-        l_extendedprice_index,
-    )
+    del filtered_batches
+    return filtered_df, l_shipdate_index, l_discount_index, l_quantity_index, l_extendedprice_index, original_size_bytes, bitmap_creation_time
 
 
 def prepare_duckdb(lineitem_df, query_file):
@@ -120,17 +126,17 @@ def prepare_datafusion(lineitem_df, query_file):
 if __name__ == "__main__":
     lineitem_parquet = "../data/tpch/parquet/lineitem.parquet"
 
-    (
-        lineitem_filtered_df,
-        l_shipdate_index,
-        l_discount_index,
-        l_quantity_index,
-        l_extendedprice_index,
-    ) = process_lineitem_parquet(lineitem_parquet)
+    (lineitem_filtered_df,
+     l_shipdate_idx,
+     l_discount_idx,
+     l_quantity_idx,
+     l_extendedprice_idx,
+     lineitem_orig_size,
+     lineitem_bitmap_time) = process_lineitem_parquet(lineitem_parquet)
 
-    bitmap_size_mb = bitmap_memory_size(
-        l_shipdate_index, l_discount_index, l_quantity_index, l_extendedprice_index
-    )
+    bitmap_size_bytes = bitmap_memory_size(l_shipdate_idx, l_discount_idx, l_quantity_idx, l_extendedprice_idx)
+
+    original_size_mb = lineitem_orig_size / (1024.0 * 1024.0)
 
     sql_query_file = "../data/tpch/queries/6.sql"
 
@@ -139,10 +145,14 @@ if __name__ == "__main__":
 
     fieldnames = [
         "Query", "Latency (s)", "CPU Usage (%)", "Peak Memory Usage (MB)",
-        "Average Memory Usage (MB)", "IOPS (ops/s)", "Roaring Bitmap Size (MB)"
+        "Average Memory Usage (MB)", "IOPS (ops/s)",
+        "Roaring Bitmap Size (MB)", "Original Columns Size (MB)",
+        "Bitmap Creation Time (s)"
     ]
     duckdb_csv_result = {k: v for k, v in result_duckdb.items() if k in fieldnames}
-    duckdb_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_mb
+    duckdb_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
+    duckdb_csv_result["Original Columns Size (MB)"] = original_size_mb
+    duckdb_csv_result["Bitmap Creation Time (s)"] = lineitem_bitmap_time
 
     duckdb_results_csv_path = "../results/roaring/duckdb/roaring_tpch.csv"
     os.makedirs(os.path.dirname(duckdb_results_csv_path), exist_ok=True)
@@ -152,7 +162,9 @@ if __name__ == "__main__":
     result_datafusion = measure_query_datafusion(6, ctx_datafusion, datafusion_query)
 
     datafusion_csv_result = {k: v for k, v in result_datafusion.items() if k in fieldnames}
-    datafusion_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_mb
+    datafusion_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
+    datafusion_csv_result["Original Columns Size (MB)"] = original_size_mb
+    datafusion_csv_result["Bitmap Creation Time (s)"] = lineitem_bitmap_time
 
     datafusion_results_csv_path = "../results/roaring/datafusion/roaring_tpch.csv"
     os.makedirs(os.path.dirname(datafusion_results_csv_path), exist_ok=True)
