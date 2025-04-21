@@ -19,6 +19,7 @@ fi
 mkdir $RESULTS_ROARING_DIR
 mkdir "$RESULTS_ROARING_DIR"/duckdb
 mkdir "$RESULTS_ROARING_DIR"/datafusion
+mkdir "$RESULTS_ROARING_DIR"/plots
 mkdir $PLOTS_DIR
 mkdir "$PLOTS_DIR"/tpch
 mkdir "$PLOTS_DIR"/tpcds
@@ -31,7 +32,16 @@ python3 tpcds_duckdb.py
 python3 tpcds_datafusion.py
 python3 plots.py tpcds
 
-python3 $ROARING_DIR/roaring_1.py
+python3 ./roaring/roaring_1.py
+python3 ./roaring/roaring_3.py
+python3 ./roaring/roaring_4.py
+python3 ./roaring/roaring_5.py
+python3 ./roaring/roaring_6.py
+python3 ./roaring/roaring_8.py
+python3 ./roaring/roaring_10.py
+python3 ./roaring/roaring_12.py
+python3 ./roaring/roaring_22.py
+python3 ./roaring/plots_roaring.py
 
 if [ -d "$DATA_TPCH_DIR" ]; then
   rm -f "$DATA_TPCH_DIR"/filtered_*.parquet
@@ -40,3 +50,5 @@ fi
 if [ -d "$DATA_TPCDS_DIR" ]; then
   rm -f "$DATA_TPCDS_DIR"/filtered_*.parquet
 fi
+
+python3 "$ROARING_DIR"/plots_roaring.py
