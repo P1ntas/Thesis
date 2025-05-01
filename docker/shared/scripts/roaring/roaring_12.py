@@ -1,9 +1,8 @@
-import os
-import sys
-import time
+import os, sys, time
 import duckdb
 import pyarrow.parquet as pq
 import pandas as pd
+from functools import reduce
 from pyroaring import BitMap
 from datafusion import SessionContext
 
@@ -11,221 +10,176 @@ from common_roaring import (
     bitmap_memory_size,
     measure_query_duckdb,
     measure_query_datafusion,
-    write_csv_results
+    write_csv_results,
 )
+from common import measure_query_execution                   
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.makedirs("../results", exist_ok=True)
 
-def process_orders_parquet(file_path, batch_size=100000):
-    o_orderkey_index = {}
-    o_orderpriority_index = {}
-    filtered_batches = []
-    global_offset = 0
-    original_size_bytes = 0
-    bitmap_start_time = time.perf_counter()
-    
-    pf = pq.ParquetFile(file_path)
-    for batch in pf.iter_batches(batch_size=batch_size):
-        df_batch = batch.to_pandas()
-        n_rows = len(df_batch)
-        
-        for col in ["o_orderkey", "o_orderpriority"]:
-            if col in df_batch.columns:
-                original_size_bytes += df_batch[col].memory_usage(deep=True)
-        
-        for col, index_dict in [
-            ("o_orderkey", o_orderkey_index),
-            ("o_orderpriority", o_orderpriority_index)
-        ]:
-            if col not in df_batch.columns:
-                continue
-            unique_vals = df_batch[col].unique()
-            for val in unique_vals:
-                local_indices = df_batch.index[df_batch[col] == val].tolist()
-                global_indices = [i + global_offset for i in local_indices]
-                if val not in index_dict:
-                    index_dict[val] = BitMap(global_indices)
-                else:
-                    index_dict[val].update(global_indices)
-        
-        keep_cols = ["o_orderkey", "o_orderpriority"]
-        existing_cols = [col for col in keep_cols if col in df_batch.columns]
-        filtered_batches.append(df_batch[existing_cols])
-        
-        global_offset += n_rows
-        del df_batch
-        
-    bitmap_end_time = time.perf_counter()
-    bitmap_creation_time = bitmap_end_time - bitmap_start_time
-    
-    filtered_df = pd.concat(filtered_batches, ignore_index=True) if filtered_batches else pd.DataFrame()
-    del filtered_batches
-    return filtered_df, o_orderkey_index, o_orderpriority_index, original_size_bytes, bitmap_creation_time
+BATCH = 100_000
+SHIPMODES = {"MAIL", "SHIP"}
+R_FROM = pd.to_datetime("1994-01-01")
+R_TO   = pd.to_datetime("1995-01-01")         
+NUM_RUNS_SQL = 3
 
-def process_lineitem_parquet(file_path, batch_size=100000):
-    l_orderkey_index = {}
-    l_shipmode_index = {}
-    l_commitdate_index = {}
-    l_receiptdate_index = {}
-    l_shipdate_index = {}
-    
-    filtered_batches = []
-    global_offset = 0
-    original_size_bytes = 0
-    bitmap_start_time = time.perf_counter()
-    
-    valid_shipmodes = {"MAIL", "SHIP"}
-    start_date = pd.to_datetime("1994-01-01")
-    end_date   = pd.to_datetime("1995-01-01")
-    
-    pf = pq.ParquetFile(file_path)
-    for batch in pf.iter_batches(batch_size=batch_size):
-        df_batch = batch.to_pandas()
-        n_rows = len(df_batch)
-        
-        for col in ["l_commitdate", "l_receiptdate", "l_shipdate"]:
-            if col in df_batch.columns:
-                df_batch[col] = pd.to_datetime(df_batch[col])
-                original_size_bytes += df_batch[col].memory_usage(deep=True)
-        for col in ["l_orderkey", "l_shipmode"]:
-            if col in df_batch.columns:
-                original_size_bytes += df_batch[col].memory_usage(deep=True)
-        
-        for col, index_dict in [
-            ("l_orderkey", l_orderkey_index),
-            ("l_shipmode", l_shipmode_index),
-            ("l_commitdate", l_commitdate_index),
-            ("l_receiptdate", l_receiptdate_index),
-            ("l_shipdate", l_shipdate_index),
-        ]:
-            if col not in df_batch.columns:
-                continue
-            unique_vals = df_batch[col].unique()
-            for val in unique_vals:
-                local_indices = df_batch.index[df_batch[col] == val].tolist()
-                global_indices = [i + global_offset for i in local_indices]
-                if val not in index_dict:
-                    index_dict[val] = BitMap(global_indices)
-                else:
-                    index_dict[val].update(global_indices)
-        
-        mask = pd.Series([True] * n_rows, index=df_batch.index)
-        if "l_shipmode" in df_batch.columns:
-            mask &= df_batch["l_shipmode"].isin(valid_shipmodes)
-        if "l_commitdate" in df_batch.columns and "l_receiptdate" in df_batch.columns:
-            mask &= df_batch["l_commitdate"] < df_batch["l_receiptdate"]
-        if "l_shipdate" in df_batch.columns and "l_commitdate" in df_batch.columns:
-            mask &= df_batch["l_shipdate"] < df_batch["l_commitdate"]
-        if "l_receiptdate" in df_batch.columns:
-            mask &= (df_batch["l_receiptdate"] >= start_date) & (df_batch["l_receiptdate"] < end_date)
-        
-        keep_cols = ["l_orderkey", "l_shipmode", "l_commitdate", "l_receiptdate", "l_shipdate"]
-        existing_cols = [col for col in keep_cols if col in df_batch.columns]
-        batch_filtered = df_batch.loc[mask, existing_cols]
-        filtered_batches.append(batch_filtered)
-        
-        global_offset += n_rows
-        del df_batch
-        
-    bitmap_end_time = time.perf_counter()
-    bitmap_creation_time = bitmap_end_time - bitmap_start_time
-    
-    filtered_df = pd.concat(filtered_batches, ignore_index=True) if filtered_batches else pd.DataFrame()
-    del filtered_batches
-    return (filtered_df, l_orderkey_index, l_shipmode_index, l_commitdate_index,
-            l_receiptdate_index, l_shipdate_index, original_size_bytes, bitmap_creation_time)
 
-def prepare_duckdb(orders_df, lineitem_df, query_file):
-    filtered_orders_parquet   = "../data/tpch/parquet/filtered_orders.parquet"
-    filtered_lineitem_parquet = "../data/tpch/parquet/filtered_lineitem.parquet"
-    
-    orders_df.to_parquet(filtered_orders_parquet, index=False, engine="pyarrow")
-    lineitem_df.to_parquet(filtered_lineitem_parquet, index=False, engine="pyarrow")
-    
+def or_reduce(bitmaps):
+    return reduce(lambda a, b: a | b, bitmaps, BitMap())
+
+
+def index_orders(path: str):
+    idx_okey, rows, bytes_ = {}, 0, 0
+    t0 = time.perf_counter()
+    for batch in pq.ParquetFile(path).iter_batches(BATCH):
+        df = batch.to_pandas(); n=len(df)
+        bytes_ += df["o_orderkey"].memory_usage(deep=True)
+        for key, loc in zip(df["o_orderkey"], df.index):
+            idx_okey.setdefault(key, BitMap()).add(loc + rows)
+        rows += n
+        del df
+    return idx_okey, rows, bytes_, time.perf_counter() - t0
+
+
+def index_line(path: str):
+    idx_shipmode = {}
+    bm_commit_lt_receipt = BitMap()
+    bm_ship_lt_commit   = BitMap()
+    bm_receipt_range    = BitMap()
+
+    rows, bytes_ = 0, 0
+    t0 = time.perf_counter()
+    for batch in pq.ParquetFile(path).iter_batches(BATCH):
+        df = batch.to_pandas(); n=len(df)
+
+        for col in ("l_commitdate", "l_receiptdate", "l_shipdate"):
+            df[col] = pd.to_datetime(df[col])
+            bytes_ += df[col].memory_usage(deep=True)
+
+        bytes_ += df["l_shipmode"].memory_usage(deep=True)
+
+        for v in df["l_shipmode"].unique():
+            idx_shipmode.setdefault(v, BitMap()).update(i + rows
+                                                        for i in df.index[df["l_shipmode"] == v])
+        commit_lt_mask = df["l_commitdate"] < df["l_receiptdate"]
+        bm_commit_lt_receipt.update((df.index[commit_lt_mask] + rows).tolist())
+
+        ship_lt_mask = df["l_shipdate"] < df["l_commitdate"]
+        bm_ship_lt_commit.update((df.index[ship_lt_mask] + rows).tolist())
+
+        range_mask = (df["l_receiptdate"] >= R_FROM) & (df["l_receiptdate"] < R_TO)
+        bm_receipt_range.update((df.index[range_mask] + rows).tolist())
+
+        rows += n
+        del df
+    secs = time.perf_counter() - t0
+    return (idx_shipmode, bm_commit_lt_receipt, bm_ship_lt_commit,
+            bm_receipt_range, rows, bytes_, secs)
+
+
+def materialise(path, bitmap, cols):
+    if not bitmap:
+        return pd.DataFrame(columns=cols)
+
+    want = iter(sorted(bitmap)); cur = next(want, None)
+    out, off = [], 0
+    for batch in pq.ParquetFile(path).iter_batches(BATCH):
+        n=len(batch); loc=[]
+        while cur is not None and cur < off + n:
+            loc.append(cur - off)
+            cur = next(want, None)
+        if loc:
+            out.append(batch.to_pandas()[cols].iloc[loc])
+        off += n
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame(columns=cols)
+
+
+def save_parquet(df, dest):
+    df.to_parquet(dest, index=False, engine="pyarrow")
+    return dest
+
+
+def prep_duck(o_df, l_df, sql_file):
+    dest_o = save_parquet(o_df, "../data/tpch/parquet/filtered_orders.parquet")
+    dest_l = save_parquet(l_df, "../data/tpch/parquet/filtered_lineitem.parquet")
     con = duckdb.connect(":memory:")
-    con.execute(f"CREATE TABLE orders   AS SELECT * FROM read_parquet('{filtered_orders_parquet}')")
-    con.execute(f"CREATE TABLE lineitem AS SELECT * FROM read_parquet('{filtered_lineitem_parquet}')")
-    
-    with open(query_file, "r") as f:
-        query = f.read()
-    
-    return con, query
+    con.execute(f"CREATE TABLE orders   AS SELECT * FROM read_parquet('{dest_o}')")
+    con.execute(f"CREATE TABLE lineitem AS SELECT * FROM read_parquet('{dest_l}')")
+    return con, open(sql_file).read()
 
-def prepare_datafusion(orders_df, lineitem_df, query_file):
-    filtered_orders_parquet   = "../data/tpch/parquet/filtered_orders.parquet"
-    filtered_lineitem_parquet = "../data/tpch/parquet/filtered_lineitem.parquet"
-    
-    orders_df.to_parquet(filtered_orders_parquet, index=False, engine="pyarrow")
-    lineitem_df.to_parquet(filtered_lineitem_parquet, index=False, engine="pyarrow")
-    
+
+def prep_df(o_df, l_df, sql_file):
+    dest_o = save_parquet(o_df, "../data/tpch/parquet/filtered_orders.parquet")
+    dest_l = save_parquet(l_df, "../data/tpch/parquet/filtered_lineitem.parquet")
     ctx = SessionContext()
-    ctx.register_parquet("orders", filtered_orders_parquet)
-    ctx.register_parquet("lineitem", filtered_lineitem_parquet)
-    
-    with open(query_file, "r") as f:
-        query = f.read()
-    
-    return ctx, query
+    ctx.register_parquet("orders", dest_o)
+    ctx.register_parquet("lineitem", dest_l)
+    return ctx, open(sql_file).read()
+
 
 if __name__ == "__main__":
-    orders_parquet = "../data/tpch/parquet/orders.parquet"
-    lineitem_parquet = "../data/tpch/parquet/lineitem.parquet"
-    
-    (orders_filtered_df,
-     o_orderkey_idx,
-     o_orderpriority_idx,
-     orders_orig_size,
-     orders_bitmap_time) = process_orders_parquet(orders_parquet)
-    
-    (lineitem_filtered_df,
-     l_orderkey_idx,
-     l_shipmode_idx,
-     l_commitdate_idx,
-     l_receiptdate_idx,
-     l_shipdate_idx,
-     lineitem_orig_size,
-     lineitem_bitmap_time) = process_lineitem_parquet(lineitem_parquet)
-    
-    bitmap_size_mb = bitmap_memory_size(
-        o_orderkey_idx, o_orderpriority_idx,
-        l_orderkey_idx, l_shipmode_idx, l_commitdate_idx, l_receiptdate_idx, l_shipdate_idx
+
+    PATH_O = "../data/tpch/parquet/orders.parquet"
+    PATH_L = "../data/tpch/parquet/lineitem.parquet"
+
+    idx_okey, rows_o, bytes_o, sec_o = index_orders(PATH_O)
+    (idx_ship, bm_clt, bm_slt, bm_range,
+     rows_l, bytes_l, sec_l) = index_line(PATH_L)
+
+    shipmode_bm = or_reduce([idx_ship[m] for m in SHIPMODES if m in idx_ship])
+
+    bm_line = measure_query_execution(
+        lambda: shipmode_bm & bm_clt & bm_slt & bm_range
     )
-    
-    total_original_bytes = orders_orig_size + lineitem_orig_size
-    original_size_mb = total_original_bytes / (1024.0 * 1024.0)
-    
-    total_bitmap_time = orders_bitmap_time + lineitem_bitmap_time
-    
-    sql_query_file = "../data/tpch/queries/12.sql"
-    
-    con_duckdb, duckdb_query = prepare_duckdb(orders_filtered_df, lineitem_filtered_df, sql_query_file)
-    result_duckdb = measure_query_duckdb(12, con_duckdb, duckdb_query)
-    
-    fieldnames = [
-        "Query", "Latency (s)", "CPU Usage (%)", "Peak Memory Usage (MB)",
-        "Average Memory Usage (MB)", "IOPS (ops/s)",
-        "Roaring Bitmap Size (MB)", "Original Columns Size (MB)",
-        "Bitmap Creation Time (s)"
+    line_bitmap = bm_line["result"]
+
+    surviving_keys = {k for k, bm in idx_okey.items() if bm & line_bitmap}
+    bm_orders = measure_query_execution(
+        lambda: or_reduce([idx_okey[k] for k in surviving_keys])
+    )
+    orders_bitmap = bm_orders["result"]
+
+    df_o = materialise(PATH_O, orders_bitmap,
+                       ["o_orderkey","o_orderpriority"])
+    df_l = materialise(PATH_L, line_bitmap,
+                       ["l_orderkey","l_shipmode",
+                        "l_commitdate","l_receiptdate","l_shipdate"])
+
+    bitmap_mb   = bitmap_memory_size(idx_okey, idx_ship,
+                                     {"cmp": bm_clt}, {"slt": bm_slt}, {"rng": bm_range})
+    original_mb = (bytes_o + bytes_l) / (1024*1024)
+    build_secs  = sec_o + sec_l
+
+    SQL = "../data/tpch/queries/12.sql"
+    con, q_duck = prep_duck(df_o, df_l, SQL)
+    res_duck = measure_query_duckdb(12, con, q_duck, num_runs=NUM_RUNS_SQL)
+
+    ctx, q_df = prep_df(df_o, df_l, SQL)
+    res_df  = measure_query_datafusion(12, ctx, q_df, num_runs=NUM_RUNS_SQL)
+
+    for tgt in (res_duck, res_df):
+        for k in ("Latency (s)", "IOPS (ops/s)"):
+            tgt[k] += (bm_orders.get(k,0) or 0) + (bm_line.get(k,0) or 0)
+        for k in ("Peak Memory Usage (MB)", "Average Memory Usage (MB)"):
+            tgt[k] = max(tgt[k], bm_orders.get(k,0) or 0, bm_line.get(k,0) or 0)
+
+        tgt.update({
+            "Roaring Bitmap Size (MB)": bitmap_mb,
+            "Original Columns Size (MB)": original_mb,
+            "Bitmap Creation Time (s)":  build_secs,
+        })
+        for junk in ("result", "error"):
+            tgt.pop(junk, None)
+
+    HEADERS = [
+        "Query","Latency (s)","CPU Usage (%)",
+        "Peak Memory Usage (MB)","Average Memory Usage (MB)","IOPS (ops/s)",
+        "Roaring Bitmap Size (MB)","Original Columns Size (MB)","Bitmap Creation Time (s)"
     ]
-    
-    duckdb_csv_result = {k: v for k, v in result_duckdb.items() if k in fieldnames}
-    duckdb_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_mb
-    duckdb_csv_result["Original Columns Size (MB)"] = original_size_mb
-    duckdb_csv_result["Bitmap Creation Time (s)"] = total_bitmap_time
-    
-    duckdb_results_csv_path = "../results/roaring/duckdb/roaring_tpch.csv"
-    os.makedirs(os.path.dirname(duckdb_results_csv_path), exist_ok=True)
-    write_csv_results(duckdb_results_csv_path, fieldnames, [duckdb_csv_result])
-    
-    ctx_datafusion, datafusion_query = prepare_datafusion(orders_filtered_df, lineitem_filtered_df, sql_query_file)
-    result_datafusion = measure_query_datafusion(12, ctx_datafusion, datafusion_query)
-    
-    datafusion_csv_result = {k: v for k, v in result_datafusion.items() if k in fieldnames}
-    datafusion_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_mb
-    datafusion_csv_result["Original Columns Size (MB)"] = original_size_mb
-    datafusion_csv_result["Bitmap Creation Time (s)"] = total_bitmap_time
-    
-    datafusion_results_csv_path = "../results/roaring/datafusion/roaring_tpch.csv"
-    os.makedirs(os.path.dirname(datafusion_results_csv_path), exist_ok=True)
-    write_csv_results(datafusion_results_csv_path, fieldnames, [datafusion_csv_result])
+    out_duck = "../results/roaring/duckdb/roaring_tpch.csv"
+    out_df   = "../results/roaring/datafusion/roaring_tpch.csv"
+    os.makedirs(os.path.dirname(out_duck), exist_ok=True)
+    os.makedirs(os.path.dirname(out_df),   exist_ok=True)
+
+    write_csv_results(out_duck, HEADERS, [res_duck])
+    write_csv_results(out_df,   HEADERS, [res_df])

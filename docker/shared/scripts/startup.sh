@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 RESULTS_DIR="../results"
 PLOTS_DIR="../results/plots"
 RESULTS_ROARING_DIR="../results/roaring"
+RESULTS_FAST_DIR="../results/fast"
 ROARING_DIR="./roaring"
 DATA_TPCH_DIR="../data/tpch/parquet/"
 DATA_TPCDS_DIR="../data/tpcds/parquet/"
@@ -20,6 +21,10 @@ mkdir $RESULTS_ROARING_DIR
 mkdir "$RESULTS_ROARING_DIR"/duckdb
 mkdir "$RESULTS_ROARING_DIR"/datafusion
 mkdir "$RESULTS_ROARING_DIR"/plots
+mkdir $RESULTS_FAST_DIR
+mkdir "$RESULTS_FAST_DIR"/duckdb
+mkdir "$RESULTS_FAST_DIR"/datafusion
+mkdir "$RESULTS_FAST_DIR"/plots
 mkdir $PLOTS_DIR
 mkdir "$PLOTS_DIR"/tpch
 mkdir "$PLOTS_DIR"/tpcds

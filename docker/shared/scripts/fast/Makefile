@@ -4,7 +4,7 @@ OPTFLAGS   = -Ofast -march=core-avx2
 WARNFLAGS  = -pedantic -Wall -Wextra -Weffc++
 CXXFLAGS   = $(OPTFLAGS) $(LANGFLAGS) $(WARNFLAGS) -fPIC
 LDFLAGS    = -shared
-TARGET     = libfast.so
+TARGET     = ./lib/libfast.so
 SRC        = ./src/fast.cpp
 
 $(TARGET): $(SRC)

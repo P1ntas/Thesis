@@ -4,6 +4,7 @@
 #include <cassert>
 #include <climits>
 #include <cstring>
+#include <algorithm>
 
 static inline void* malloc_huge(std::size_t size) {
     void* p = mmap(nullptr, size, PROT_READ | PROT_WRITE,
@@ -14,15 +15,25 @@ static inline void* malloc_huge(std::size_t size) {
     return p;
 }
 
+static inline unsigned next_pow2(unsigned x) {
+    if (x == 0) return 1;
+    --x;
+    x |= x >> 1;  x |= x >> 2;  x |= x >> 4;
+    x |= x >> 8;  x |= x >> 16;
+    return x + 1;
+}
+
 static const unsigned maskTbl[8] = {0,9,1,2,9,9,9,3};
 inline unsigned fast::FastIndex::maskToIndex(unsigned bm) { return maskTbl[bm & 7]; }
 
 fast::FastIndex::FastIndex(const std::vector<int32_t>& keys_in, unsigned k)
   : K_(k)
 {
-    n_ = 1U << (16 + (K_ << 2));  
     std::vector<int32_t> keys = keys_in;
-    keys.push_back(INT_MAX);
+    std::sort(keys.begin(), keys.end());
+
+    n_ = next_pow2(static_cast<unsigned>(keys.size()) + 1);
+    keys.push_back(INT_MAX);            
     keys.resize(n_, INT_MAX);
 
     leaves_ = new LeafEntry[n_];
@@ -88,6 +99,10 @@ for (unsigned lvl = 0; lvl < levels; ++lvl) {
                                      l, i + cl * chunk, i + (cl + 1) * chunk);
 }
 return offset;
+}
+
+uint32_t fast::FastIndex::upper_bound(int32_t key) const {
+    return static_cast<uint32_t>( search(key) );
 }
 
 uint64_t fast::FastIndex::search(int32_t key_q) const

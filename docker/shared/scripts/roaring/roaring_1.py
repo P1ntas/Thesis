@@ -13,124 +13,159 @@ from common_roaring import (
     measure_query_datafusion,
     write_csv_results
 )
+from common import measure_query_execution   # <-- NEW
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 os.makedirs("../results", exist_ok=True)
 
-def process_lineitem_parquet(file_path, batch_size=100000,
-                             filter_returnflag='N', filter_linestatus='O'):
-    returnflag_index = {}
-    linestatus_index = {}
-    filtered_batches = []
-    global_offset = 0
-    original_size_bytes = 0
-    bitmap_start_time = time.perf_counter()
 
-    pf = pq.ParquetFile(file_path)
-    for batch in pf.iter_batches(batch_size=batch_size):
-        df_batch = batch.to_pandas()
-        n_rows = len(df_batch)
+def build_bitmap_indexes(file_path, batch_size):
+    returnflag_idx, linestatus_idx = {}, {}
+    global_offset, orig_bytes = 0, 0
+    t0 = time.perf_counter()
 
-        if 'l_returnflag' in df_batch.columns:
-            original_size_bytes += df_batch['l_returnflag'].memory_usage(deep=True)
-        if 'l_linestatus' in df_batch.columns:
-            original_size_bytes += df_batch['l_linestatus'].memory_usage(deep=True)
+    for batch in pq.ParquetFile(file_path).iter_batches(batch_size=batch_size):
+        df = batch.to_pandas()   
+        n_rows = len(df)
 
-        for col, index_dict in [('l_returnflag', returnflag_index),
-                                ('l_linestatus', linestatus_index)]:
-            unique_vals = df_batch[col].unique()
-            for val in unique_vals:
-                local_indices = df_batch.index[df_batch[col] == val].tolist()
-                global_indices = [i + global_offset for i in local_indices]
-                if val not in index_dict:
-                    index_dict[val] = BitMap(global_indices)
-                else:
-                    index_dict[val].update(global_indices)
+        if 'l_returnflag' in df.columns:
+            orig_bytes += df['l_returnflag'].memory_usage(deep=True)
+        if 'l_linestatus' in df.columns:
+            orig_bytes += df['l_linestatus'].memory_usage(deep=True)
 
-        batch_filtered = df_batch[
-            (df_batch['l_returnflag'] == filter_returnflag) &
-            (df_batch['l_linestatus'] == filter_linestatus)
-        ]
-        filtered_batches.append(batch_filtered)
+        for col, idx in (('l_returnflag', returnflag_idx),
+                         ('l_linestatus', linestatus_idx)):
+            for v in df[col].unique():
+                local = df.index[df[col] == v].tolist()
+                idx.setdefault(v, BitMap()).update(i + global_offset for i in local)
 
         global_offset += n_rows
-        del df_batch
+        del df         
 
-    bitmap_end_time = time.perf_counter()
-    bitmap_creation_time = bitmap_end_time - bitmap_start_time
+    return (returnflag_idx,
+            linestatus_idx,
+            orig_bytes,
+            time.perf_counter() - t0)
 
-    filtered_df = pd.concat(filtered_batches, ignore_index=True) if filtered_batches else pd.DataFrame()
-    return filtered_df, returnflag_index, linestatus_index, original_size_bytes, bitmap_creation_time
 
-def prepare_duckdb(filtered_df, query_file):
-    for col in ['l_extendedprice', 'l_quantity', 'l_discount', 'l_tax']:
-        if col in filtered_df.columns:
-            filtered_df[col] = filtered_df[col].astype('float64')
+def materialise_filtered_df(file_path, bitmap, batch_size):
+    if not bitmap:
+        return pd.DataFrame()
 
-    filtered_parquet_path = '../data/tpch/parquet/filtered_lineitem.parquet'
-    filtered_df.to_parquet(filtered_parquet_path, index=False, engine='pyarrow')
+    wanted = iter(sorted(bitmap))
+    current = next(wanted, None)
+    global_offset, out = 0, []
+
+    for batch in pq.ParquetFile(file_path).iter_batches(batch_size=batch_size):
+        n_rows = len(batch)
+        local_idx = []
+        while current is not None and current < global_offset + n_rows:
+            local_idx.append(current - global_offset)
+            current = next(wanted, None)
+
+        if local_idx:
+            out.append(batch.to_pandas().iloc[local_idx])
+
+        global_offset += n_rows
+
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame()
+
+
+def prepare_duckdb(df, query_file):
+    for col in ('l_extendedprice', 'l_quantity', 'l_discount', 'l_tax'):
+        if col in df.columns:
+            df[col] = df[col].astype('float64')
+
+    dest = '../data/tpch/parquet/filtered_lineitem.parquet'
+    df.to_parquet(dest, index=False, engine='pyarrow')
 
     con = duckdb.connect(':memory:')
-    con.execute(f"CREATE TABLE lineitem AS SELECT * FROM read_parquet('{filtered_parquet_path}')")
+    con.execute(f"CREATE TABLE lineitem AS SELECT * FROM read_parquet('{dest}')")
+    return con, open(query_file).read()
 
-    with open(query_file, 'r') as f:
-        query = f.read()
 
-    return con, query
+def prepare_datafusion(df, query_file):
+    for col in ('l_extendedprice', 'l_quantity', 'l_discount', 'l_tax'):
+        if col in df.columns:
+            df[col] = df[col].astype('float64')
 
-def prepare_datafusion(filtered_df, query_file):
-    for col in ['l_extendedprice', 'l_quantity', 'l_discount', 'l_tax']:
-        if col in filtered_df.columns:
-            filtered_df[col] = filtered_df[col].astype('float64')
-
-    filtered_parquet_path = '../data/tpch/parquet/filtered_lineitem.parquet'
-    filtered_df.to_parquet(filtered_parquet_path, index=False, engine='pyarrow')
-
+    dest = '../data/tpch/parquet/filtered_lineitem.parquet'
+    df.to_parquet(dest, index=False, engine='pyarrow')
     ctx = SessionContext()
+    ctx.register_parquet("lineitem", dest)
+    return ctx, open(query_file).read()
 
-    ctx.register_parquet("lineitem", filtered_parquet_path)
-
-    with open(query_file, 'r') as f:
-        query = f.read()
-
-    return ctx, query
 
 if __name__ == "__main__":
-    file_path = '../data/tpch/parquet/lineitem.parquet'
-    filtered_df, returnflag_idx, linestatus_idx, original_size_bytes, bitmap_creation_time = process_lineitem_parquet(file_path)
+    FILE = '../data/tpch/parquet/lineitem.parquet'
+    BATCH = 100_000
+    RET_FLAG, LINE_STAT = 'N', 'O'
+    QUERY_PATH = '../data/tpch/queries/1.sql'
 
-    bitmap_size_bytes = bitmap_memory_size(returnflag_idx, linestatus_idx)
+    (ret_idx, line_idx,
+     orig_bytes, build_secs) = build_bitmap_indexes(FILE, BATCH)
 
-    original_size_mb = original_size_bytes / (1024.0 * 1024.0)
+    bitmap_metrics = measure_query_execution(
+        lambda: ret_idx.get(RET_FLAG, BitMap()) & line_idx.get(LINE_STAT, BitMap())
+    )
+    filter_bitmap = bitmap_metrics["result"]
 
-    sql_query_file = '../data/tpch/queries/1.sql'
+    filtered_df = materialise_filtered_df(FILE, filter_bitmap, BATCH)
 
-    con_duckdb, duckdb_query = prepare_duckdb(filtered_df, sql_query_file)
-    result_duckdb = measure_query_duckdb(1, con_duckdb, duckdb_query)
+    bitmap_mb = bitmap_memory_size(ret_idx, line_idx)
+    original_mb = orig_bytes / (1024 * 1024)
 
-    fieldnames = [
-        "Query", "Latency (s)", "CPU Usage (%)", "Peak Memory Usage (MB)",
-        "Average Memory Usage (MB)", "IOPS (ops/s)",
+    con, duck_query = prepare_duckdb(filtered_df, QUERY_PATH)
+    r_duck = measure_query_duckdb(1, con, duck_query)
+
+    for k in ("Latency (s)", "Peak Memory Usage (MB)",
+              "Average Memory Usage (MB)", "IOPS (ops/s)"):
+        if r_duck.get(k) is not None and bitmap_metrics.get(k) is not None:
+            r_duck[k] += bitmap_metrics[k]
+
+    r_duck.update({
+        "Roaring Bitmap Size (MB)": bitmap_mb,
+        "Original Columns Size (MB)": original_mb,
+        "Bitmap Creation Time (s)": build_secs
+    })
+
+    ctx, df_query = prepare_datafusion(filtered_df, QUERY_PATH)
+    r_df = measure_query_datafusion(1, ctx, df_query)
+
+    for k in ("Latency (s)", "Peak Memory Usage (MB)",
+              "Average Memory Usage (MB)", "IOPS (ops/s)"):
+        if r_df.get(k) is not None and bitmap_metrics.get(k) is not None:
+            r_df[k] += bitmap_metrics[k]
+
+    r_df.update({
+        "Roaring Bitmap Size (MB)": bitmap_mb,
+        "Original Columns Size (MB)": original_mb,
+        "Bitmap Creation Time (s)": build_secs
+    })
+
+    FIELDNAMES = [
+        "Query", "Latency (s)", "CPU Usage (%)",
+        "Peak Memory Usage (MB)", "Average Memory Usage (MB)", "IOPS (ops/s)",
         "Roaring Bitmap Size (MB)", "Original Columns Size (MB)",
         "Bitmap Creation Time (s)"
     ]
-    duckdb_csv_result = {k: v for k, v in result_duckdb.items() if k in fieldnames}
-    duckdb_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
-    duckdb_csv_result["Original Columns Size (MB)"] = original_size_mb
-    duckdb_csv_result["Bitmap Creation Time (s)"] = bitmap_creation_time
 
-    duckdb_results_csv_path = "../results/roaring/duckdb/roaring_tpch.csv"
-    os.makedirs(os.path.dirname(duckdb_results_csv_path), exist_ok=True)
-    write_csv_results(duckdb_results_csv_path, fieldnames, [duckdb_csv_result])
+    for junk in ("result", "error"):
+        r_duck.pop(junk, None)
 
-    ctx_datafusion, datafusion_query = prepare_datafusion(filtered_df, sql_query_file)
-    result_datafusion = measure_query_datafusion(1, ctx_datafusion, datafusion_query)
+    duck_csv = "../results/roaring/duckdb/roaring_tpch.csv"
+    os.makedirs(os.path.dirname(duck_csv), exist_ok=True)
+    write_csv_results(duck_csv, FIELDNAMES, [r_duck])
 
-    datafusion_csv_result = {k: v for k, v in result_datafusion.items() if k in fieldnames}
-    datafusion_csv_result["Roaring Bitmap Size (MB)"] = bitmap_size_bytes
-    datafusion_csv_result["Original Columns Size (MB)"] = original_size_mb
-    datafusion_csv_result["Bitmap Creation Time (s)"] = bitmap_creation_time
+    r_df.update({
+    "Roaring Bitmap Size (MB)": bitmap_mb,
+    "Original Columns Size (MB)": original_mb,
+    "Bitmap Creation Time (s)": build_secs
+    })
 
-    datafusion_results_csv_path = "../results/roaring/datafusion/roaring_tpch.csv"
-    os.makedirs(os.path.dirname(datafusion_results_csv_path), exist_ok=True)
-    write_csv_results(datafusion_results_csv_path, fieldnames, [datafusion_csv_result])
+    for junk in ("result", "error"):
+        r_df.pop(junk, None)
+
+    df_csv = "../results/roaring/datafusion/roaring_tpch.csv"
+    os.makedirs(os.path.dirname(df_csv), exist_ok=True)
+    write_csv_results(df_csv, FIELDNAMES, [r_df])
