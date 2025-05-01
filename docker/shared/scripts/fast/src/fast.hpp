@@ -9,6 +9,8 @@ public:
     explicit FastIndex(const std::vector<int32_t>& keys, unsigned k = 3);
     ~FastIndex();
 
+    uint32_t upper_bound(int32_t key) const;
+
     uint64_t search(int32_t key) const;
 
     std::size_t size()   const { return n_; }
