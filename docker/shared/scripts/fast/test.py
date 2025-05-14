@@ -1,80 +1,83 @@
-from __future__ import annotations
-import re, time, pathlib, numpy as np, pyarrow.parquet as pq, pyarrow as pa, pyarrow.compute as pc
 import cppyy
+import random
+import time
 
-cppyy.add_include_path(".")
-cppyy.load_library("./fast/lib/libfast.so")
-cppyy.include("./fast/src/fast.hpp")
-FastIndex = cppyy.gbl.fast.FastIndex
-StdVecI32 = cppyy.gbl.std.vector['int32_t']
+cppyy.add_include_path(".")          
+cppyy.load_library("./lib/libfast.so")    
+cppyy.include("./src/fast.hpp")   
 
-SQL_RANGE = re.compile(r"l_shipdate\s*<=\s*date\s*'([^']+)'", re.I)
+def test_integer_search():
+    print("\n=== Testing Integer Search ===")
+    
+    keys = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    
+    FastIndex = cppyy.gbl.fast.FastIndex
+    index = FastIndex(keys)
+    
+    print(f"Created FAST index with {len(keys)} elements, padded size = {index.size()}")
+    
+    print("\nSearching for existing keys:")
+    for key in [30, 70, 100]:
+        start = time.perf_counter_ns()
+        result = index.search(key)
+        elapsed = time.perf_counter_ns() - start
+        print(f"Search for {key}: result = {result}, took {elapsed} ns")
+    
+    print("\nSearching for non-existing keys:")
+    for key in [15, 55, 120]:
+        start = time.perf_counter_ns()
+        result = index.search(key)
+        elapsed = time.perf_counter_ns() - start
+        print(f"Search for {key}: result = {result}, took {elapsed} ns")
+    
+    print("\nBenchmarking with 10,000 random queries:")
+    queries = random.choices(keys, k=10000)
+    start = time.perf_counter_ns()
+    s = 0
+    for k in queries:
+        s += index.search(k)
+    elapsed = time.perf_counter_ns() - start
+    print(f"Average latency = {elapsed / 10000:.1f} ns, checksum = {s}")
 
-
-def extract_limit(sql_file: pathlib.Path) -> np.int32:
-    m = SQL_RANGE.search(sql_file.read_text())
-    if not m:
-        raise RuntimeError("no `l_shipdate <= date 'YYYY-MM-DD'` predicate")
-    return np.datetime64(m.group(1), "D").astype(np.int32)
-
-
-def build_vector_from_parquet(col_path: pathlib.Path) -> StdVecI32:
-    pf   = pq.ParquetFile(col_path)
-    vec  = StdVecI32()
-    vec.reserve(pf.metadata.num_rows)    
-
-    for rg in range(pf.num_row_groups):
-        carray = pf.read_row_group(rg, columns=["l_shipdate"]).column(0)
-        for chunk in carray.chunks:
-            np_view = (chunk
-                       .to_numpy(zero_copy_only=False)
-                       .astype("datetime64[D]").astype(np.int32))
-            vec += np_view.tolist()  
-    return vec
-
-
-
-def write_filtered_rows(src_path: pathlib.Path,
-                        out_path: pathlib.Path,
-                        limit_days: int):
-    pf      = pq.ParquetFile(src_path)
-    writer  = None
-    limit_scalar = pa.scalar(limit_days, pa.int32())   
-
-    for rg in range(pf.num_row_groups):
-        tbl   = pf.read_row_group(rg)
-        sd32  = pc.cast(tbl["l_shipdate"], pa.int32())
-        mask  = pc.less_equal(sd32, limit_scalar)
-        if pc.any(mask).as_py():                      
-            filtered = tbl.filter(mask)
-            if writer is None:
-                writer = pq.ParquetWriter(out_path,
-                                          filtered.schema,
-                                          compression="snappy")
-            writer.write_table(filtered)
-
-    if writer is not None:
-        writer.close()
-
+def test_date_search():
+    print("\n=== Testing Date Search ===")
+    
+    date_keys = [
+        "1998-01-15", "1998-03-20", "1998-05-10", 
+        "1998-07-30", "1998-09-05", "1998-11-25", 
+        "1998-12-01", "1999-01-10", "1999-02-15", "1999-03-22"
+    ]
+    
+    FastIndex = cppyy.gbl.fast.FastIndex
+    index = FastIndex(date_keys)
+    
+    print(f"Created FAST index with {len(date_keys)} date elements, padded size = {index.size()}")
+    
+    print("\nSearching for existing dates:")
+    for date_key in ["1998-05-10", "1998-12-01", "1999-03-22"]:
+        start = time.perf_counter_ns()
+        result = index.searchDate(date_key)
+        elapsed = time.perf_counter_ns() - start
+        print(f"Search for {date_key}: result = {result}, took {elapsed} ns")
+    
+    print("\nSearching for dates not in the index:")
+    for date_key in ["1998-06-15", "1999-01-01", "1997-12-31"]:
+        start = time.perf_counter_ns()
+        result = index.searchDate(date_key)
+        elapsed = time.perf_counter_ns() - start
+        print(f"Search for {date_key}: result = {result}, took {elapsed} ns")
+    
+    print("\nBenchmarking with 10,000 random date queries:")
+    queries = random.choices(date_keys, k=10000)
+    start = time.perf_counter_ns()
+    s = 0
+    for date in queries:
+        s += index.searchDate(date)
+    elapsed = time.perf_counter_ns() - start
+    print(f"Average latency = {elapsed / 10000:.1f} ns, checksum = {s}")
 
 if __name__ == "__main__":
-    sql_path = pathlib.Path("../data/tpch/queries/1.sql")
-    pq_path  = pathlib.Path("../data/tpch/parquet/lineitem.parquet")
-    out_path = pq_path.with_name("lineitem_filtered.parquet")
-
-    limit = extract_limit(sql_path)
-    print("Predicate  :", np.datetime_as_string(limit.astype("datetime64[D]")),
-          f"(days={limit})")
-
-    vec_cpp = build_vector_from_parquet(pq_path)
-    print("Rows       :", f"{vec_cpp.size():,}")
-
-    fast = FastIndex(vec_cpp, 3)
-    t0 = time.perf_counter_ns()
-    rank = fast.upper_bound(int(limit))
-    print(f"upper_bound() = {rank:,}   latency = {time.perf_counter_ns() - t0} ns")
-    print("FAST size  :", f"{fast.size():,}")
-
-    print("Writing filtered Parquet …")
-    write_filtered_rows(pq_path, out_path, int(limit))
-    print("Done  →", out_path)
+    test_integer_search()
+    test_date_search()
+    
+    print("\nAll tests completed!")
