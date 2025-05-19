@@ -1,9 +1,11 @@
 env/*
 docker/shared/data/tpch/parquet/*.parquet
 docker/shared/data/tpcds/parquet/*.parquet
+docker/shared/data/tpch/parquet_bigger/*
 docker/shared/scripts/__pycache__/*
 docker/shared/scripts/roaring/__pycache__/*
 docker/shared/scripts/fast/__pycache__/*
 docker/shared/scripts/fast/lib/*
 docker/shared/scripts/fast/lognormal.sorted.190M
+docker/shared/results/*
 .vscode/
