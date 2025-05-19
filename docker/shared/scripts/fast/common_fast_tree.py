@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from common import measure_query_execution
 
 
-def aggregate_metrics(*metric_dicts: Iterable[Dict]) -> Dict:
+def aggregate_metrics(*metric_dicts: Dict[str, float]) -> Dict[str, float]:
     out: Dict[str, float] = {}
 
     tot_latency      = 0.0
@@ -50,7 +50,7 @@ def fast_tree_memory_size(*fast_tree_dicts):
     total_bytes = 0
     for ft_dict in fast_tree_dicts:
         for fast_tree in ft_dict.values():
-            total_bytes += fast_tree.size() * 4
+            total_bytes += fast_tree.size()
     return total_bytes / (1024 * 1024) 
 
 
