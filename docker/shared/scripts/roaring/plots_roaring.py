@@ -105,3 +105,37 @@ create_bar_plot_sizes(
     title='Roaring vs Original Columns Size per Query',
     output_filename='roaring_vs_original_columns_size.png'
 )
+
+def create_single_bar_plot(csv_file, metric, title, output_filename):
+    df = pd.read_csv(csv_file)
+    queries = df['Query'].astype(str)
+    values = df[metric]
+
+    y = np.arange(len(queries))
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.barh(y, values, height=0.6)
+
+    ax.set_ylabel('Query')
+    ax.set_xlabel(metric)
+    ax.set_title(title)
+    ax.set_yticks(y)
+    ax.set_yticklabels(queries)
+
+    for bar in bars:
+        value = bar.get_width()
+        ax.annotate(f'{value:.2f}',
+                    xy=(value, bar.get_y() + bar.get_height()/2),
+                    xytext=(3, 0),
+                    textcoords="offset points",
+                    ha='left', va='center')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(plots_dir, output_filename))
+    plt.close()
+
+create_single_bar_plot(
+    csv_file=duckdb_roaring,
+    metric='Bitmap Creation Time (s)',
+    title='DuckDB Roaring: Bitmap Creation Time per Query',
+    output_filename='bitmap_creation_time.png'
+)

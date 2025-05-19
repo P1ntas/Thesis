@@ -26,11 +26,11 @@ def create_bar_plot(plain_csv, fast_csv, metric, title, output_filename):
     ax.set_xlabel(metric)
     ax.set_title(title)
     ax.set_yticks(y)
-    ax.margins(y=0.02)
     ax.set_yticklabels(queries)
+    ax.margins(y=0.03)
     ax.legend()
 
-    for rect in rects1 + rects2:
+    for rect in list(rects1) + list(rects2):
         value = rect.get_width()
         ax.annotate(f'{value:.2f}',
                     xy=(value, rect.get_y() + rect.get_height()/2),
@@ -41,37 +41,16 @@ def create_bar_plot(plain_csv, fast_csv, metric, title, output_filename):
     plt.savefig(os.path.join(plots_dir, output_filename))
     plt.close()
 
-def create_combined_size_plot(duckdb_csv, datafusion_csv, metric1, metric2, title, output_filename):
-    df_dd = pd.read_csv(duckdb_csv)[['Query', metric1, metric2]]
-    df_df = pd.read_csv(datafusion_csv)[['Query', metric1, metric2]]
-
-    df_dd = df_dd.rename(columns={metric1: f"{metric1}_DuckDB",
-                                  metric2: f"{metric2}_DuckDB"})
-    df_df = df_df.rename(columns={metric1: f"{metric1}_DataFusion",
-                                  metric2: f"{metric2}_DataFusion"})
-    df = pd.merge(df_dd, df_df, on='Query')
-
+def create_duckdb_size_plot(duckdb_csv, metric1, metric2, title, output_filename):
+    df = pd.read_csv(duckdb_csv)[['Query', metric1, metric2]]
+    df = df.rename(columns={metric1: 'Fast Tree Size', metric2: 'Original Column Size'})
     queries = df['Query'].astype(str)
     y = np.arange(len(queries))
-    series = [
-        (f"{metric1}_DuckDB", 'DuckDB Fast Tree Size'),
-        (f"{metric2}_DuckDB", 'DuckDB Original Column Size'),
-        (f"{metric1}_DataFusion", 'DataFusion Fast Tree Size'),
-        (f"{metric2}_DataFusion", 'DataFusion Original Column Size'),
-    ]
-    n = len(series)
-    height = 0.8 / n
-    offsets = [(i - (n-1)/2) * height for i in range(n)]
+    height = 0.35
 
     fig, ax = plt.subplots(figsize=(12, 7))
-    for (col, label), offset in zip(series, offsets):
-        bars = ax.barh(y + offset, df[col], height, label=label)
-        for bar in bars:
-            value = bar.get_width()
-            ax.annotate(f'{value:.2f}',
-                        xy=(value, bar.get_y() + bar.get_height()/2),
-                        xytext=(3, 0), textcoords="offset points",
-                        ha='left', va='center')
+    rects1 = ax.barh(y - height/2, df['Fast Tree Size'], height, label='Fast Tree')
+    rects2 = ax.barh(y + height/2, df['Original Column Size'], height, label='Original Column')
 
     ax.set_ylabel('Query')
     ax.set_xlabel('Size (MB)')
@@ -80,24 +59,27 @@ def create_combined_size_plot(duckdb_csv, datafusion_csv, metric1, metric2, titl
     ax.set_yticklabels(queries)
     ax.legend()
 
+    for rects in [rects1, rects2]:
+        for rect in rects:
+            value = rect.get_width()
+            ax.annotate(f'{value:.2f}',
+                        xy=(value, rect.get_y() + rect.get_height()/2),
+                        xytext=(3, 0), textcoords="offset points",
+                        ha='left', va='center')
+
     plt.tight_layout()
     plt.savefig(os.path.join(plots_dir, output_filename))
     plt.close()
 
-def create_combined_creation_time_plot(duckdb_csv, datafusion_csv, metric, title, output_filename):
-    df_dd = pd.read_csv(duckdb_csv)[['Query', metric]].rename(
-        columns={metric: 'DuckDB'})
-    df_df = pd.read_csv(datafusion_csv)[['Query', metric]].rename(
-        columns={metric: 'DataFusion'})
-    df = pd.merge(df_dd, df_df, on='Query')
-
+def create_duckdb_creation_time_plot(duckdb_csv, metric, title, output_filename):
+    df = pd.read_csv(duckdb_csv)[['Query', metric]].rename(
+        columns={metric: 'Fast Tree Creation Time'})
     queries = df['Query'].astype(str)
     y = np.arange(len(queries))
     height = 0.35
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    rects1 = ax.barh(y - height/2, df['DuckDB'], height, label='DuckDB')
-    rects2 = ax.barh(y + height/2, df['DataFusion'], height, label='DataFusion')
+    rects = ax.barh(y, df['Fast Tree Creation Time'], height, label='Fast Tree')
 
     ax.set_ylabel('Query')
     ax.set_xlabel(metric)
@@ -106,7 +88,7 @@ def create_combined_creation_time_plot(duckdb_csv, datafusion_csv, metric, title
     ax.set_yticklabels(queries)
     ax.legend()
 
-    for rect in rects1 + rects2:
+    for rect in rects:
         value = rect.get_width()
         ax.annotate(f'{value:.2f}',
                     xy=(value, rect.get_y() + rect.get_height()/2),
@@ -122,7 +104,7 @@ duckdb_fast       = '../results/fast/duckdb/fast_tpch.csv'
 datafusion_plain  = '../results/tpch_datafusion.csv'
 datafusion_fast   = '../results/fast/datafusion/fast_tpch.csv'
 
-metrics = [
+deep_metrics = [
     "Latency (s)",
     "CPU Usage (%)",
     "Peak Memory Usage (MB)",
@@ -130,7 +112,7 @@ metrics = [
     "IOPS (ops/s)"
 ]
 
-for metric in metrics:
+for metric in deep_metrics:
     fname = metric.replace(' ', '_').replace('(', '').replace(')', '') \
                    .replace('%','pct').replace('/','_')
     create_bar_plot(
@@ -148,19 +130,17 @@ for metric in metrics:
         f"datafusion_{fname}.png"
     )
 
-create_combined_size_plot(
+create_duckdb_size_plot(
     duckdb_fast,
-    datafusion_fast,
     metric1='Fast Tree Size (MB)',
     metric2='Original Column Size (MB)',
-    title='Fast Tree vs Original Columns Size per Query (DuckDB & DataFusion)',
+    title='Fast Tree vs Original Columns Size per Query',
     output_filename='fast_vs_original_columns_size.png'
 )
 
-create_combined_creation_time_plot(
+create_duckdb_creation_time_plot(
     duckdb_fast,
-    datafusion_fast,
     metric='Fast Tree Creation Time (s)',
-    title='Fast Tree Creation Time per Query (DuckDB & DataFusion)',
+    title='Fast Tree Creation Time per Query',
     output_filename='fast_tree_creation_time.png'
 )
