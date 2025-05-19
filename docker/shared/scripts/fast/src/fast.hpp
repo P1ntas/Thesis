@@ -88,6 +88,12 @@ public:
         const DateType& start,
         const DateType& end,
         const std::vector<Entry<DateType, ValueType>>& original_data) const;
+
+    template<typename DateType, typename ValueType>
+    RangeResult<DateType, ValueType> rangeGreaterThan(
+        const DateType& cutoff,
+        const std::vector<Entry<DateType, ValueType>>& original_data) const;
+    
     
     size_t getTreeSize() const { return tree_size_; }
     size_t getDataSize() const { return data_size_; }

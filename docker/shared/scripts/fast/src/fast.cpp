@@ -263,6 +263,32 @@ FastTree<K>::rangeSearch(const DateType& start,
 }
 
 template<unsigned K>
+template<typename DateType, typename ValueType>
+typename FastTree<K>::template RangeResult<DateType, ValueType>
+FastTree<K>::rangeGreaterThan(
+    const DateType& cutoff,
+    const std::vector<Entry<DateType, ValueType>>& original_data) const
+{
+    RangeResult<DateType, ValueType> result;
+    if (!tree_data_ || key_to_index_.empty()) return result;
+
+    int32_t cutoff_int = dateToInt32(cutoff);
+    auto it = std::upper_bound(
+        key_to_index_.begin(), key_to_index_.end(),
+        std::make_pair(cutoff_int, SIZE_MAX)
+    );
+
+    for (auto iter = it; iter != key_to_index_.end(); ++iter) {
+        if (iter->second != SIZE_MAX && iter->second < original_data.size()) {
+            result.entries.push_back(original_data[iter->second]);
+            result.count++;
+        }
+    }
+    return result;
+}
+
+
+template<unsigned K>
 size_t FastTree<K>::getMemoryUsage() const {
     size_t memory = tree_size_ * sizeof(int32_t);
     memory += key_to_index_.size() * sizeof(std::pair<int32_t, size_t>); 
@@ -325,4 +351,8 @@ FastTree<3>::rangeSearch<int32_t, uint64_t>(
     const int32_t&,
     const std::vector<Entry<int32_t, uint64_t>>&) const;
 
+template typename FastTree<3>::RangeResult<int32_t, uint64_t>
+FastTree<3>::rangeGreaterThan<int32_t, uint64_t>(
+    const int32_t&,
+    const std::vector<Entry<int32_t, uint64_t>>&) const;
 } 
