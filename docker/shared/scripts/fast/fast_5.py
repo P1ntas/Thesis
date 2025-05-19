@@ -89,11 +89,6 @@ def materialize_filtered_indices(file_path: str, indices: set, batch_size: int) 
         global_offset += n_rows
     return pd.concat(out_frames, ignore_index=True) if out_frames else pd.DataFrame()
 
-def _cast_numeric(df: pd.DataFrame):
-    for col in ("l_extendedprice", "l_quantity", "l_discount", "l_tax"):
-        if col in df.columns:
-            df[col] = df[col].astype("float64")
-
 def prepare_duckdb(filtered_orders: pd.DataFrame, query_file: str):
     dest_ord = "../data/tpch/parquet/filtered_orders.parquet"
     filtered_orders.to_parquet(dest_ord, index=False, engine="pyarrow")

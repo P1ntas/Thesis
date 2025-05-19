@@ -26,6 +26,7 @@ def create_bar_plot(plain_csv, roaring_csv, metric, title, output_filename):
     ax.set_ylabel('Query')
     ax.set_xlabel(metric)
     ax.set_title(title)
+    ax.margins(y=0.03)
     ax.set_yticks(y)
     ax.set_yticklabels(queries)
     ax.legend()
