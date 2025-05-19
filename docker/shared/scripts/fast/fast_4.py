@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 import duckdb
 import pyarrow.parquet as pq
@@ -98,7 +97,7 @@ def _cast_numeric(df: pd.DataFrame):
             df[col] = df[col].astype("float64")
 
 def prepare_duckdb(filtered_orders: pd.DataFrame, query_file: str):
-    dest_ord = "../data/tpch/parquet/filtered_orders_q4.parquet"
+    dest_ord = "../data/tpch/parquet/filtered_orders.parquet"
     filtered_orders.to_parquet(dest_ord, index=False, engine="pyarrow")
 
     con = duckdb.connect(":memory:")
@@ -108,7 +107,7 @@ def prepare_duckdb(filtered_orders: pd.DataFrame, query_file: str):
     return con, sql
 
 def prepare_datafusion(filtered_orders: pd.DataFrame, query_file: str):
-    dest_ord = "../data/tpch/parquet/filtered_orders_q4.parquet"
+    dest_ord = "../data/tpch/parquet/filtered_orders.parquet"
     filtered_orders.to_parquet(dest_ord, index=False, engine="pyarrow")
 
     ctx = SessionContext()

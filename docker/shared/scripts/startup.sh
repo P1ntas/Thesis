@@ -7,6 +7,7 @@ PLOTS_DIR="../results/plots"
 RESULTS_ROARING_DIR="../results/roaring"
 RESULTS_FAST_DIR="../results/fast"
 ROARING_DIR="./roaring"
+FAST_DIR="./fast"
 DATA_TPCH_DIR="../data/tpch/parquet/"
 DATA_TPCDS_DIR="../data/tpcds/parquet/"
 
@@ -48,12 +49,24 @@ python3 ./roaring/roaring_12.py
 python3 ./roaring/roaring_22.py
 python3 ./roaring/plots_roaring.py
 
+python3 "$ROARING_DIR"/plots_roaring.py
+
+python3 ./fast/fast_1.py
+python3 ./fast/fast_3.py
+python3 ./fast/fast_4.py
+python3 ./fast/fast_5.py
+python3 ./fast/fast_6.py
+python3 ./fast/fast_7.py
+python3 ./fast/fast_8.py
+python3 ./fast/fast_10.py
+python3 ./fast/fast_12.py
+python3 ./fast/fast_14.py
+python3 ./fast/fast_15.py
+python3 ./fast/fast_19.py
+python3 ./fast/fast_20.py
+
+python3 "$FAST_DIR"/plots_fast.py
+
 if [ -d "$DATA_TPCH_DIR" ]; then
   rm -f "$DATA_TPCH_DIR"/filtered_*.parquet
 fi
-
-if [ -d "$DATA_TPCDS_DIR" ]; then
-  rm -f "$DATA_TPCDS_DIR"/filtered_*.parquet
-fi
-
-python3 "$ROARING_DIR"/plots_roaring.py

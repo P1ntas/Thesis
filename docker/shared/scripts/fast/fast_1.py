@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 import duckdb
 import pyarrow.parquet as pq
