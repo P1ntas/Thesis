@@ -68,6 +68,12 @@ python3 ./fast/fast_19.py
 python3 ./fast/fast_20.py
 python3 ./fast/plots_fast.py
 
+make clean -C ./kdtree && make -C ./kdtree
+
+python3 ./kdtree/kdtree_6.py
+python3 ./kdtree/kdtree_19.py
+python3 ./kdtree/plots_kdtree.py 
+
 DATA_TPCH_DIR="../data/tpch/parquet/"
 if [ -d "$DATA_TPCH_DIR" ]; then
   rm -f "$DATA_TPCH_DIR"/filtered_*.parquet

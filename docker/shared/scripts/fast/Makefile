@@ -1,5 +1,5 @@
 CXX        = g++
-LANGFLAGS  = -std=c++14
+LANGFLAGS  = -std=c++23
 OPTFLAGS   = -Ofast -march=core-avx2
 WARNFLAGS  = -pedantic -Wall -Wextra -Weffc++
 CXXFLAGS   = $(OPTFLAGS) $(LANGFLAGS) $(WARNFLAGS) -fPIC
