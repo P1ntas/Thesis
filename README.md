@@ -63,3 +63,63 @@ docker compose down && docker compose build && docker compose up -d
 ![CPU Usage](./docker/shared/results/plots/tpcds/CPU_Usage_%25.png)
 
 ![Input/Output Operations per Second](./docker/shared/results/plots/tpcds/IOPS_ops_s.png)
+
+### Roaring Bitmap
+
+![Index Creation Time](./docker/shared/results/roaring/plots/bitmap_creation_time.png)
+
+![Index Comparison Size](./docker/shared/results/roaring/plots/roaring_vs_original_columns_size.png)
+
+#### DuckDB
+
+![Latency](./docker/shared/results/roaring/plots/duckdb_Latency_s.png)
+
+![Peak Memory Usage](./docker/shared/results/roaring/plots/duckdb_Peak_Memory_Usage_MB.png)
+
+![Average Memory Usage](./docker/shared/results/roaring/plots/duckdb_Average_Memory_Usage_MB.png)
+
+![CPU Usage](./docker/shared/results/roaring/plots/duckdb_CPU_Usage_pct.png)
+
+![Input/Output Operations per Second](./docker/shared/results/roaring/plots/duckdb_IOPS_ops_s.png)
+
+#### Apache DataFusion
+
+![Latency](./docker/shared/results/roaring/plots/datafusion_Latency_s.png)
+
+![Peak Memory Usage](./docker/shared/results/roaring/plots/datafusion_Peak_Memory_Usage_MB.png)
+
+![Average Memory Usage](./docker/shared/results/roaring/plots/datafusion_Average_Memory_Usage_MB.png)
+
+![CPU Usage](./docker/shared/results/roaring/plots/datafusion_CPU_Usage_pct.png)
+
+![Input/Output Operations per Second](./docker/shared/results/roaring/plots/datafusion_IOPS_ops_s.png)
+
+### FAST Tree
+
+![Index Creation Time](./docker/shared/results/fast/plots/duckdb_fast_tree_creation_time.png)
+
+![Index Comparison Size](./docker/shared/results/fast/plots/duckdb_fast_vs_original_columns_size.png)
+
+#### DuckDB
+
+![Latency](./docker/shared/results/fast/plots/duckdb_Latency_s.png)
+
+![Peak Memory Usage](./docker/shared/results/fast/plots/duckdb_Peak_Memory_Usage_MB.png)
+
+![Average Memory Usage](./docker/shared/results/fast/plots/duckdb_Average_Memory_Usage_MB.png)
+
+![CPU Usage](./docker/shared/results/fast/plots/duckdb_CPU_Usage_pct.png)
+
+![Input/Output Operations per Second](./docker/shared/results/fast/plots/duckdb_IOPS_ops_s.png)
+
+#### Apache DataFusion
+
+![Latency](./docker/shared/results/fast/plots/datafusion_Latency_s.png)
+
+![Peak Memory Usage](./docker/shared/results/fast/plots/datafusion_Peak_Memory_Usage_MB.png)
+
+![Average Memory Usage](./docker/shared/results/fast/plots/datafusion_Average_Memory_Usage_MB.png)
+
+![CPU Usage](./docker/shared/results/fast/plots/datafusion_CPU_Usage_pct.png)
+
+![Input/Output Operations per Second](./docker/shared/results/fast/plots/datafusion_IOPS_ops_s.png)
