@@ -48,7 +48,7 @@ docker compose down && docker compose build && docker compose up -d
 
 ![Average Memory Usage](./docker/shared/results/plots/tpch/Average_Memory_Usage_MB.png)
 
-![CPU Usage](./docker/shared/results/plots/tpch/CPU_Usage_%.png)
+![CPU Usage](./docker/shared/results/plots/tpch/CPU_Usage_%25.png)
 
 ![Input/Output Operations per Second](./docker/shared/results/plots/tpch/IOPS_ops_s.png)
 
@@ -60,6 +60,6 @@ docker compose down && docker compose build && docker compose up -d
 
 ![Average Memory Usage](./docker/shared/results/plots/tpcds/Average_Memory_Usage_MB.png)
 
-![CPU Usage](./docker/shared/results/plots/tpcds/CPU_Usage_%.png)
+![CPU Usage](./docker/shared/results/plots/tpcds/CPU_Usage_%25.png)
 
 ![Input/Output Operations per Second](./docker/shared/results/plots/tpcds/IOPS_ops_s.png)
