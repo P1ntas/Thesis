@@ -1,6 +1,32 @@
-# Tese
+# Thesis
 
-This repository ensures the contents of my thesis are easily reproducible to be verified by external entities. It provides benchmark results for two query benchmarking tools: **TPC-H** and **TPC-DS**. The results include plots for latency, memory usage, and IOPS.
+This repository ensures the contents of my thesis are easily reproducible to be verified by external entities. It provides benchmark results for two query benchmarking tools: **TPC-H** and **TPC-DS**. The results include plots for latency, IOPS, and memory and CPU usage, among other metrics.
+
+## Project structure
+
+- `./docker/shared/data/`: Contains generated dataset and queries based on the industry-standard **TPC-H** and **TPC-DS** benchmarking tools. The dataset files are in the `parquet` format, as these files are optimized for columnar storage and OLAP queries.
+
+- `./docker/shared/results/`: Results of the benchmarks.
+
+- `./docker/shared/scripts/`: This directory contains a suite of benchmarking scripts, including:
+
+    - A startup script for launching the Docker container;
+    - Scripts for executing benchmark queries;
+    - Utilities for capturing and aggregating performance metrics;
+    - Plotting scripts for visualizing the results.
+
+    Additionally, it includes two subdirectories:
+
+    - `roaring`: Contains benchmarking scripts specific to the Roaring Bitmap  ;
+    - `fast`: Contains scripts tailored for benchmarking the FAST tree.
+
+## Benchmark methodology
+
+Integrating directly with the query engine would require a deep understanding of its internal workings and could potentially interfere with its optimized query planners. To avoid these complications, I adopted an alternative approach.
+
+The scripts first build the index and then measure the performance of search and filter operations on the indexed data structure. Once filtering is complete, the resulting data is passed to the query engine for execution.
+
+This method takes a conservative approach to benchmarking. Although it introduces some redundancy, the results are likely to underestimate real-world performance—meaning actual usage scenarios may yield better outcomes than those measured here.
 
 ## Setup
 
@@ -12,7 +38,9 @@ docker compose down && docker compose build && docker compose up -d
 
 ## Results
 
-### TPC-H
+### Comparison between DuckDB and Apache DataFusion
+
+#### TPC-H
 
 ![Latency](./docker/shared/results/plots/tpch/Latency_s.png)
 
@@ -22,7 +50,7 @@ docker compose down && docker compose build && docker compose up -d
 
 ![Input/Output Operations per Second](./docker/shared/results/plots/tpch/IOPS_ops_s.png)
 
-### TPC-DS
+#### TPC-DS
 
 ![Latency](./docker/shared/results/plots/tpcds/Latency_s.png)
 
