@@ -60,6 +60,8 @@ def measure_query_duckdb(query_number: int, con, query, num_runs: int = 3):
     profile_path = f"../results/kdtree/analyze/{query_number}.json"
     os.makedirs(os.path.dirname(profile_path), exist_ok=True)
     con.execute(f"SET profiling_output = '{profile_path}';")
+    con.execute(query)
+    con.execute("PRAGMA disable_profiling;")
     runs = [measure_query_execution(lambda: con.execute(query).fetchall())
             for _ in range(num_runs)]
     result = _aggregate_runs(runs)
