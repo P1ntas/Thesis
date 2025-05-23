@@ -1,0 +1,108 @@
+{
+    "all_optimizers": 0.00017781099999999997,
+    "cumulative_optimizer_timing": 0.00017743099999999998,
+    "planner": 0.000149202,
+    "planner_binding": 0.000146679,
+    "physical_planner": 0.000019433000000000002,
+    "physical_planner_column_binding": 0.000001396,
+    "physical_planner_resolve_types": 1.54e-7,
+    "physical_planner_create_plan": 0.000016177,
+    "optimizer_common_subexpressions": 0.000003199,
+    "optimizer_statistics_propagation": 0.000013897,
+    "optimizer_unused_columns": 0.000011492,
+    "optimizer_unnest_rewriter": 7.09e-7,
+    "optimizer_deliminator": 7.38e-7,
+    "optimizer_join_order": 0.00002786,
+    "optimizer_in_clause": 0.000001034,
+    "optimizer_regex_range": 5.21e-7,
+    "optimizer_cte_filter_pusher": 8.61e-7,
+    "optimizer_empty_result_pullup": 5.91e-7,
+    "optimizer_filter_pushdown": 0.00003869,
+    "optimizer_filter_pullup": 0.000002002,
+    "optimizer_expression_rewriter": 0.00005991,
+    "optimizer_common_aggregate": 0.000001215,
+    "optimizer_column_lifetime": 0.0000030360000000000002,
+    "cumulative_rows_scanned": 14551280,
+    "cumulative_cardinality": 152541,
+    "extra_info": {},
+    "cpu_time": 0.03794012000000001,
+    "system_peak_temp_dir_size": 0,
+    "optimizer_reorder_filter": 7.69e-7,
+    "system_peak_buffer_memory": 349970792,
+    "optimizer_duplicate_groups": 0.000001784,
+    "blocked_thread_time": 0.0,
+    "optimizer_compressed_materialization": 0.0,
+    "query_name": "select\n\tsum(l_extendedprice * l_discount) as revenue\nfrom\n\tlineitem\nwhere\n\tl_shipdate >= '1994-01-01'\n\tand l_shipdate < '1995-01-01'\n\tand l_discount between 0.05 and 0.05\n\tand l_quantity < 24;\n",
+    "result_set_size": 8,
+    "optimizer_build_side_probe_side": 0.000001523,
+    "latency": 0.006753849,
+    "optimizer_limit_pushdown": 3.12e-7,
+    "rows_returned": 1,
+    "optimizer_top_n": 7.51e-7,
+    "optimizer_late_materialization": 6.9e-7,
+    "optimizer_sum_rewriter": 0.000005129,
+    "optimizer_materialized_cte": 0.0,
+    "optimizer_extension": 0.0,
+    "optimizer_join_filter_pushdown": 5.23e-7,
+    "optimizer_sampling_pushdown": 1.95e-7,
+    "children": [
+        {
+            "operator_timing": 0.000568678,
+            "operator_rows_scanned": 0,
+            "cumulative_rows_scanned": 14551280,
+            "operator_cardinality": 1,
+            "operator_type": "UNGROUPED_AGGREGATE",
+            "cumulative_cardinality": 152541,
+            "extra_info": {
+                "Aggregates": "sum(#0)"
+            },
+            "cpu_time": 0.03794012000000001,
+            "operator_name": "UNGROUPED_AGGREGATE",
+            "result_set_size": 8,
+            "children": [
+                {
+                    "operator_timing": 0.002238871,
+                    "operator_rows_scanned": 0,
+                    "cumulative_rows_scanned": 14551280,
+                    "operator_cardinality": 76270,
+                    "operator_type": "PROJECTION",
+                    "cumulative_cardinality": 152540,
+                    "extra_info": {
+                        "Projections": "(l_extendedprice * l_discount)",
+                        "Estimated Cardinality": "363782"
+                    },
+                    "cpu_time": 0.037371442000000005,
+                    "operator_name": "PROJECTION",
+                    "result_set_size": 610160,
+                    "children": [
+                        {
+                            "operator_timing": 0.03513257100000001,
+                            "operator_rows_scanned": 14551280,
+                            "cumulative_rows_scanned": 14551280,
+                            "operator_cardinality": 76270,
+                            "operator_type": "TABLE_SCAN",
+                            "cumulative_cardinality": 76270,
+                            "extra_info": {
+                                "Table": "lineitem",
+                                "Type": "Sequential Scan",
+                                "Projections": [
+                                    "l_discount",
+                                    "l_extendedprice"
+                                ],
+                                "Filters": [
+                                    "l_discount>=0.05 AND l_discount<=0.05",
+                                    "l_quantity<24.0"
+                                ],
+                                "Estimated Cardinality": "363782"
+                            },
+                            "cpu_time": 0.03513257100000001,
+                            "operator_name": "SEQ_SCAN ",
+                            "result_set_size": 1220320,
+                            "children": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,168 @@
+{
+    "all_optimizers": 0.00029344599999999994,
+    "cumulative_optimizer_timing": 0.00029288600000000007,
+    "planner": 0.00034971300000000003,
+    "planner_binding": 0.000346988,
+    "physical_planner": 0.000033665,
+    "physical_planner_column_binding": 0.000003121,
+    "physical_planner_resolve_types": 4.6e-7,
+    "physical_planner_create_plan": 0.000027424,
+    "optimizer_common_subexpressions": 0.000012283,
+    "optimizer_statistics_propagation": 0.000035535,
+    "optimizer_unused_columns": 0.000013097,
+    "optimizer_unnest_rewriter": 6.84e-7,
+    "optimizer_deliminator": 6.94e-7,
+    "optimizer_join_order": 0.000060878,
+    "optimizer_in_clause": 0.000001039,
+    "optimizer_regex_range": 4.68e-7,
+    "optimizer_cte_filter_pusher": 8.51e-7,
+    "optimizer_empty_result_pullup": 8.68e-7,
+    "optimizer_filter_pushdown": 0.000041055,
+    "optimizer_filter_pullup": 0.000002741,
+    "optimizer_expression_rewriter": 0.000067323,
+    "optimizer_common_aggregate": 0.000004714,
+    "optimizer_column_lifetime": 0.000008322,
+    "cumulative_rows_scanned": 1903932,
+    "cumulative_cardinality": 1159828,
+    "extra_info": {},
+    "cpu_time": 0.027450755,
+    "system_peak_temp_dir_size": 0,
+    "optimizer_reorder_filter": 0.000001428,
+    "system_peak_buffer_memory": 119426176,
+    "optimizer_duplicate_groups": 0.00000316,
+    "blocked_thread_time": 0.0,
+    "optimizer_compressed_materialization": 0.0,
+    "query_name": "select\n\t100.00 * sum(case\n\t\twhen p_type like 'PROMO%'\n\t\t\tthen l_extendedprice * (1 - l_discount)\n\t\telse 0\n\tend) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue\nfrom\n\tlineitem,\n\tpart\nwhere\n\tl_partkey = p_partkey\n\tand l_shipdate >= '1995-09-01'\n\tand l_shipdate < '1995-10-01'\n",
+    "result_set_size": 8,
+    "optimizer_build_side_probe_side": 0.000012685,
+    "latency": 0.015213708,
+    "optimizer_limit_pushdown": 3.77e-7,
+    "rows_returned": 1,
+    "optimizer_top_n": 5.97e-7,
+    "optimizer_late_materialization": 7.51e-7,
+    "optimizer_sum_rewriter": 0.000004803,
+    "optimizer_materialized_cte": 0.0,
+    "optimizer_extension": 0.0,
+    "optimizer_join_filter_pushdown": 0.000018268,
+    "optimizer_sampling_pushdown": 2.65e-7,
+    "children": [
+        {
+            "operator_timing": 0.000002502,
+            "operator_rows_scanned": 0,
+            "cumulative_rows_scanned": 1903932,
+            "operator_cardinality": 1,
+            "operator_type": "PROJECTION",
+            "cumulative_cardinality": 1159828,
+            "extra_info": {
+                "Projections": "promo_revenue",
+                "Estimated Cardinality": "1"
+            },
+            "cpu_time": 0.027450755,
+            "operator_name": "PROJECTION",
+            "result_set_size": 8,
+            "children": [
+                {
+                    "operator_timing": 0.0009168849999999998,
+                    "operator_rows_scanned": 0,
+                    "cumulative_rows_scanned": 1903932,
+                    "operator_cardinality": 1,
+                    "operator_type": "UNGROUPED_AGGREGATE",
+                    "cumulative_cardinality": 1159827,
+                    "extra_info": {
+                        "Aggregates": [
+                            "sum(#0)",
+                            "sum(#1)"
+                        ]
+                    },
+                    "cpu_time": 0.027448253,
+                    "operator_name": "UNGROUPED_AGGREGATE",
+                    "result_set_size": 16,
+                    "children": [
+                        {
+                            "operator_timing": 0.004819169,
+                            "operator_rows_scanned": 0,
+                            "cumulative_rows_scanned": 1903932,
+                            "operator_cardinality": 303932,
+                            "operator_type": "PROJECTION",
+                            "cumulative_cardinality": 1159826,
+                            "extra_info": {
+                                "Projections": [
+                                    "CASE  WHEN (prefix(p_type, 'PROMO')) THEN ((l_extendedprice * (1.0 - l_discount))) ELSE 0.0 END",
+                                    "(l_extendedprice * (1.0 - l_discount))"
+                                ],
+                                "Estimated Cardinality": "115758"
+                            },
+                            "cpu_time": 0.026531368,
+                            "operator_name": "PROJECTION",
+                            "result_set_size": 4862912,
+                            "children": [
+                                {
+                                    "operator_timing": 0.019206136,
+                                    "operator_rows_scanned": 0,
+                                    "cumulative_rows_scanned": 1903932,
+                                    "operator_cardinality": 303932,
+                                    "operator_type": "HASH_JOIN",
+                                    "cumulative_cardinality": 855894,
+                                    "extra_info": {
+                                        "Join Type": "INNER",
+                                        "Conditions": "p_partkey = l_partkey",
+                                        "Estimated Cardinality": "115758"
+                                    },
+                                    "cpu_time": 0.021712198999999998,
+                                    "operator_name": "HASH_JOIN",
+                                    "result_set_size": 9725824,
+                                    "children": [
+                                        {
+                                            "operator_timing": 0.0023499289999999997,
+                                            "operator_rows_scanned": 1600000,
+                                            "cumulative_rows_scanned": 1600000,
+                                            "operator_cardinality": 399996,
+                                            "operator_type": "TABLE_SCAN",
+                                            "cumulative_cardinality": 399996,
+                                            "extra_info": {
+                                                "Table": "part",
+                                                "Type": "Sequential Scan",
+                                                "Projections": [
+                                                    "p_partkey",
+                                                    "p_type"
+                                                ],
+                                                "Filters": "p_partkey<=199998",
+                                                "Estimated Cardinality": "400000"
+                                            },
+                                            "cpu_time": 0.0023499289999999997,
+                                            "operator_name": "SEQ_SCAN ",
+                                            "result_set_size": 9599904,
+                                            "children": []
+                                        },
+                                        {
+                                            "operator_timing": 0.00015613399999999994,
+                                            "operator_rows_scanned": 303932,
+                                            "cumulative_rows_scanned": 303932,
+                                            "operator_cardinality": 151966,
+                                            "operator_type": "TABLE_SCAN",
+                                            "cumulative_cardinality": 151966,
+                                            "extra_info": {
+                                                "Table": "lineitem",
+                                                "Type": "Sequential Scan",
+                                                "Projections": [
+                                                    "l_partkey",
+                                                    "l_extendedprice",
+                                                    "l_discount"
+                                                ],
+                                                "Estimated Cardinality": "30393"
+                                            },
+                                            "cpu_time": 0.00015613399999999994,
+                                            "operator_name": "SEQ_SCAN ",
+                                            "result_set_size": 3647184,
+                                            "children": []
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

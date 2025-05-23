@@ -7,4 +7,5 @@ docker/shared/scripts/roaring/__pycache__/*
 docker/shared/scripts/fast/__pycache__/*
 docker/shared/scripts/fast/lib/*
 docker/shared/scripts/kdtree/lib/*
+docker/shared/scripts/kdtree/__pycache__/*
 .vscode/*
