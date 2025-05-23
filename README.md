@@ -126,30 +126,30 @@ docker compose down && docker compose build && docker compose up -d
 
 ### Kd Tree
 
-![Index Creation Time](./docker/shared/results/kdtree/plots/.png)
+![Index Creation Time](./docker/shared/results/kdtree/plots/kd_tree_creation_time.png)
 
-![Index Comparison Size](./docker/shared/results/kdtree/plots/.png)
+![Index Comparison Size](./docker/shared/results/kdtree/plots/tree_size_duckdb.png)
 
 #### DuckDB
 
-![Latency](./docker/shared/results/kdtree/plots/.png)
+![Latency](./docker/shared/results/kdtree/plots/latency_duckdb.png)
 
-![Peak Memory Usage](./docker/shared/results/kdtree/plots/.png)
+![Peak Memory Usage](./docker/shared/results/kdtree/plots/peak_mem_duckdb.png)
 
-![Average Memory Usage](./docker/shared/results/kdtree/plots/.png)
+![Average Memory Usage](./docker/shared/results/kdtree/plots/avg_mem_duckdb.png)
 
-![CPU Usage](./docker/shared/results/kdtree/plots/.png)
+![CPU Usage](./docker/shared/results/kdtree/plots/cpu_usage_duckdb.png)
 
-![Input/Output Operations per Second](./docker/shared/results/kdtree/plots/.png)
+![Input/Output Operations per Second](./docker/shared/results/kdtree/plots/iops_duckdb.png)
 
 #### Apache DataFusion
 
-![Latency](./docker/shared/results/kdtree/plots/.png)
+![Latency](./docker/shared/results/kdtree/plots/latency_datafusion.png)
 
-![Peak Memory Usage](./docker/shared/results/kdtree/plots/.png)
+![Peak Memory Usage](./docker/shared/results/kdtree/plots/peak_mem_datafusion.png)
 
-![Average Memory Usage](./docker/shared/results/kdtree/plots/.png)
+![Average Memory Usage](./docker/shared/results/kdtree/plots/avg_mem_datafusion.png)
 
-![CPU Usage](./docker/shared/results/kdtree/plots/.png)
+![CPU Usage](./docker/shared/results/kdtree/plots/cpu_usage_datafusion.png)
 
-![Input/Output Operations per Second](./docker/shared/results/kdtree/plots/.png)
+![Input/Output Operations per Second](./docker/shared/results/kdtree/plots/iops_datafusion.png)
