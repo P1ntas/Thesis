@@ -96,9 +96,9 @@ docker compose down && docker compose build && docker compose up -d
 
 ### FAST Tree
 
-![Index Creation Time](./docker/shared/results/fast/plots/duckdb_fast_tree_creation_time.png)
+![Index Creation Time](./docker/shared/results/fast/plots/fast_tree_creation_time.png)
 
-![Index Comparison Size](./docker/shared/results/fast/plots/duckdb_fast_vs_original_columns_size.png)
+![Index Comparison Size](./docker/shared/results/fast/plots/fast_vs_original_columns_size.png)
 
 #### DuckDB
 
