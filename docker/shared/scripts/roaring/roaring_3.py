@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     con, sql_duck      = prepare_duckdb(df_c, df_o, df_l, "../data/tpch/queries/3.sql")
     eng_duck           = measure_query_duckdb(3, con, sql_duck)
-    res_duck = aggregate_metrics(bm_cust, bm_orders, bm_lines, eng_duck)  # ← NEW
+    res_duck = aggregate_metrics(bm_cust, bm_orders, bm_lines, eng_duck)
 
     res_duck.update({
         "Query": 3,
@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
     ctx, sql_df        = prepare_datafusion(df_c, df_o, df_l, "../data/tpch/queries/3.sql")
     eng_df             = measure_query_datafusion(3, ctx, sql_df)
-    res_df  = aggregate_metrics(bm_cust, bm_orders, bm_lines, eng_df)     # ← NEW
+    res_df  = aggregate_metrics(bm_cust, bm_orders, bm_lines, eng_df)
     res_df.update({
         "Query": 3,
         "Roaring Bitmap Size (MB)": bitmap_mb,

@@ -53,8 +53,13 @@ def fast_tree_memory_size(*fast_tree_dicts):
             total_bytes += fast_tree.size()
     return total_bytes / (1024 * 1024) 
 
-
 def measure_query_duckdb(query_number: int, con, query, num_runs: int = 3):
+    con.execute("SET explain_output = 'all';")
+    con.execute("PRAGMA enable_profiling = json;")
+    con.execute("SET profiling_mode = detailed;")
+    profile_path = f"../results/fast/analyze/{query_number}.json"
+    os.makedirs(os.path.dirname(profile_path), exist_ok=True)
+    con.execute(f"SET profiling_output = '{profile_path}';")
     runs = [measure_query_execution(lambda: con.execute(query).fetchall())
             for _ in range(num_runs)]
     result = _aggregate_runs(runs)

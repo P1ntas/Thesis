@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from common import measure_query_execution
 
 
-def aggregate_metrics(*metric_dicts: Iterable[Dict]) -> Dict:
+def aggregate_metrics(*metric_dicts: Dict[str, float]) -> Dict[str, float]:
     out: Dict[str, float] = {}
 
     tot_latency      = 0.0
@@ -46,19 +46,18 @@ def aggregate_metrics(*metric_dicts: Iterable[Dict]) -> Dict:
     return out
 
 
-def bitmap_memory_size(*bitmap_dicts):
+def fast_tree_memory_size(*fast_tree_dicts):
     total_bytes = 0
-    for bm_dict in bitmap_dicts:
-        for bitmap in bm_dict.values():
-            total_bytes += len(bitmap.serialize())
-    return total_bytes / (1024 * 1024)
-
+    for ft_dict in fast_tree_dicts:
+        for fast_tree in ft_dict.values():
+            total_bytes += fast_tree.size()
+    return total_bytes / (1024 * 1024) 
 
 def measure_query_duckdb(query_number: int, con, query, num_runs: int = 3):
     con.execute("SET explain_output = 'all';")
     con.execute("PRAGMA enable_profiling = json;")
     con.execute("SET profiling_mode = detailed;")
-    profile_path = f"../results/roaring/analyze/{query_number}.json"
+    profile_path = f"../results/kdtree/analyze/{query_number}.json"
     os.makedirs(os.path.dirname(profile_path), exist_ok=True)
     con.execute(f"SET profiling_output = '{profile_path}';")
     runs = [measure_query_execution(lambda: con.execute(query).fetchall())
@@ -88,6 +87,7 @@ def write_csv_results(csv_path, fieldnames, rows):
         if first_time:
             w.writeheader()
         w.writerows(rows)
+
 
 def _aggregate_runs(runs_data):
     if not runs_data:

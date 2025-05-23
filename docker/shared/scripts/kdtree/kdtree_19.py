@@ -12,8 +12,7 @@ cppyy.add_include_path("./kdtree/src")
 cppyy.include("vkdtree.hpp")
 cppyy.load_library("./kdtree/lib/libfast.so")
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../fast")))
-from common_fast_tree import (
+from common_kdtree import (
     measure_query_duckdb,
     measure_query_datafusion,
     write_csv_results,
