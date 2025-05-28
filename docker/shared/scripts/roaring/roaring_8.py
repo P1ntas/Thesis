@@ -16,7 +16,7 @@ from common import measure_query_execution
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.makedirs("../results", exist_ok=True)
 
-BATCH = 100_000
+BATCH = 6000000
 REGION = "AMERICA"
 PART   = "ECONOMY ANODIZED STEEL"
 FROM   = pd.to_datetime("1995-01-01")

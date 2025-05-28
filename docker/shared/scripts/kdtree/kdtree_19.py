@@ -23,7 +23,7 @@ from datafusion import SessionContext
 
 LINEITEM_FILE = "../data/tpch/parquet/lineitem.parquet"
 PART_FILE = "../data/tpch/parquet/part.parquet"
-BATCH = 100_000
+BATCH = 6000000
 QUERY_PATH = "../data/tpch/queries/19.sql" 
 RESULT_DIR = "../results/kdtree/"
 

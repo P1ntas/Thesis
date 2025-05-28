@@ -17,7 +17,7 @@ from datetime import datetime
 FILE_ORDERS   = "../data/tpch/parquet/orders.parquet"
 FILE_LINEITEM = "../data/tpch/parquet/lineitem.parquet"
 
-BATCH         = 100_000
+BATCH         = 6000000
 START_DATE    = "1993-07-01"
 END_DATE      = "1993-10-01"   
 QUERY_PATH    = "../data/tpch/queries/4.sql"

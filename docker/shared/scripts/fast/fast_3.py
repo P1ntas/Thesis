@@ -18,7 +18,7 @@ FILE_LINEITEM = "../data/tpch/parquet/lineitem.parquet"
 FILE_ORDERS   = "../data/tpch/parquet/orders.parquet"
 FILE_CUSTOMER = "../data/tpch/parquet/customer.parquet"
 
-BATCH       = 100_000
+BATCH       = 6000000
 CUTOFF_DATE = "1995-03-15"
 QUERY_PATH  = "../data/tpch/queries/3.sql"
 RESULT_DIR = "../results/fast"

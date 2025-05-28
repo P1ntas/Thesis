@@ -16,7 +16,7 @@ from common import measure_query_execution
 FILE_PART     = "../data/tpch/parquet/part.parquet"
 FILE_LINEITEM = "../data/tpch/parquet/lineitem.parquet"
 
-BATCH      = 100_000
+BATCH      = 6000000
 SIZE_MIN   = 1
 SIZE_MAX   = 15
 QUERY_PATH = "../data/tpch/queries/19.sql"

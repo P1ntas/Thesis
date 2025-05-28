@@ -15,7 +15,7 @@ from common import measure_query_execution
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.makedirs("../results", exist_ok=True)
 
-BATCH = 100_000
+BATCH = 6000000
 DATE_FROM = pd.to_datetime("1993-07-01")
 DATE_TO   = pd.to_datetime("1993-10-01")
 

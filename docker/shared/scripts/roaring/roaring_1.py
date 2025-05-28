@@ -21,7 +21,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.makedirs("../results", exist_ok=True)
 
 FILE        = "../data/tpch/parquet/lineitem.parquet"
-BATCH       = 100_000
+BATCH       = 6000000
 RET_FLAG    = "N"
 LINE_STAT   = "O"
 QUERY_PATH  = "../data/tpch/queries/1.sql"

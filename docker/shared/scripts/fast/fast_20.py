@@ -20,7 +20,7 @@ FILE_PARTSUPP = "../data/tpch/parquet/partsupp.parquet"
 FILE_SUPPLIER = "../data/tpch/parquet/supplier.parquet"
 FILE_NATION   = "../data/tpch/parquet/nation.parquet"
 
-BATCH       = 100_000
+BATCH       = 6000000
 START_DATE  = "1994-01-01"
 END_DATE    = "1995-01-01"  
 QUERY_PATH  = "../data/tpch/queries/20.sql"

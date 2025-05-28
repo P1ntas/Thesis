@@ -15,7 +15,7 @@ from common import measure_query_execution
 from datetime import datetime
 
 FILE = "../data/tpch/parquet/lineitem.parquet"
-BATCH = 100_000
+BATCH = 6000000
 CUTOFF_DATE = "1998-12-01"
 QUERY_PATH = "../data/tpch/queries/1.sql"
 RESULT_DIR = "../results/fast"

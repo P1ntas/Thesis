@@ -16,7 +16,7 @@ from common import measure_query_execution
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.makedirs("../results", exist_ok=True)
 
-BATCH          = 100_000
+BATCH          = 6000000
 NUM_RUNS_SQL   = 3
 PREFIXES       = {"13", "31", "23", "29", "30", "18", "17"}
 

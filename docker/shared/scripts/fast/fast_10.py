@@ -19,7 +19,7 @@ FILE_ORDERS   = "../data/tpch/parquet/orders.parquet"
 FILE_LINEITEM = "../data/tpch/parquet/lineitem.parquet"
 FILE_NATION   = "../data/tpch/parquet/nation.parquet"
 
-BATCH       = 100_000
+BATCH       = 6000000
 START_DATE  = "1993-10-01"
 END_DATE    = "1994-01-01"   
 QUERY_PATH  = "../data/tpch/queries/10.sql"
