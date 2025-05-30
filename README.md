@@ -56,6 +56,8 @@ docker compose down && docker compose build && docker compose up -d
 
 ![Latency](./docker/shared/results/plots/tpcds/Latency_s.png)
 
+![Latency](./docker/shared/results/plots/tpcds/Latency_s_no_q72.png)
+
 ![Peak Memory Usage](./docker/shared/results/plots/tpcds/Peak_Memory_Usage_MB.png)
 
 ![Average Memory Usage](./docker/shared/results/plots/tpcds/Average_Memory_Usage_MB.png)
