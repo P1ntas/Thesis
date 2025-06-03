@@ -108,7 +108,7 @@ def _plot_tree_size(
 
     ax.set_xlabel("Query")
     ax.set_ylabel("Size (MB)")
-    ax.set_title("KD-Tree vs Original Column Size per Query (DuckDB)")
+    ax.set_title("KD-Tree vs Original Column Size per Query")
     ax.set_xticks(ind + width / 2)
     ax.set_xticklabels(queries, rotation=45, ha="right")
     ax.legend()
