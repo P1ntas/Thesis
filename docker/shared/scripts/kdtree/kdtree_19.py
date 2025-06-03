@@ -1,6 +1,4 @@
-# kdtree_19.py
 import os
-import sys
 import time
 from typing import Dict, List, Set, Tuple
 
@@ -36,7 +34,7 @@ FIELDNAMES = [
     "Average Memory Usage (MB)",
     "IOPS (ops/s)",
     "KD Tree Size (MB)",
-    "Encoded Column Size (MB)",      # ⬅️  renamed
+    "Original Column Size (MB)",      
     "KD Tree Creation Time (s)",
 ]
 
@@ -48,22 +46,17 @@ SPECS: List[Tuple[str, List[str], int, int]] = [
 
 
 def _encode(value: str, mapping: Dict[str, int]) -> int:
-    """Map string → integer code (dense, starting at 0)."""
     if value not in mapping:
         mapping[value] = len(mapping)
     return mapping[value]
 
 
 def _cast_numeric(df: pd.DataFrame):
-    """Ensure numeric columns are float64 for DuckDB/DataFusion."""
     for col in ("l_extendedprice", "l_quantity", "l_discount", "l_tax"):
         if col in df.columns:
             df[col] = df[col].astype("float64")
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# KD-tree construction – now also returns encoded-bytes
-# ──────────────────────────────────────────────────────────────────────────
 def build_kd_tree(
     lineitem_path: str,
     part_path: str,
@@ -84,7 +77,7 @@ def build_kd_tree(
     cpp_entries = cppyy.gbl.std.vector[Entry3]()
     cpp_entries.reserve(total_rows)
 
-    enc_bytes = 0                       # ▶️ what we will return
+    enc_bytes = 0                  
     offset = 0
     t0 = time.perf_counter()
 
@@ -94,11 +87,8 @@ def build_kd_tree(
         merged = df_li.join(part_lookup, on="l_partkey", how="inner")
         merged["l_quantity"] = merged["l_quantity"].astype("float32")
 
-        # ----- memory of converted columns (brand_code, cont_code, qty) -----
-        # each row will be stored as three float32 values in Python/numpy
-        enc_bytes += len(merged) * 3 * 4  # 3 × 4 bytes
+        enc_bytes += len(merged) * 3 * 4  
 
-        # build entries
         for local_idx, row in merged.iterrows():
             brand_code = float(_encode(row["p_brand"], brand_codes))
             cont_code = float(_encode(row["p_container"], container_codes))
@@ -116,13 +106,11 @@ def build_kd_tree(
     build_secs = time.perf_counter() - t0
 
     return tree, brand_codes, container_codes, enc_bytes, build_secs
-    #                ↑↑↑↑↑↑↑  replaced orig_bytes
 
 
 def materialize_filtered_indices(
     file_path: str, indices: Set[int], batch_size: int
 ) -> pd.DataFrame:
-    """Bring only the rows we kept (by global index) back into a DataFrame."""
     if not indices:
         return pd.DataFrame()
 
@@ -141,9 +129,6 @@ def materialize_filtered_indices(
     return pd.concat(out, ignore_index=True) if out else pd.DataFrame()
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# DuckDB / DataFusion helpers (unchanged)
-# ──────────────────────────────────────────────────────────────────────────
 def prepare_duckdb(df_lineitem: pd.DataFrame, part_file: str, query_file: str):
     _cast_numeric(df_lineitem)
 
@@ -170,9 +155,6 @@ def prepare_datafusion(df_lineitem: pd.DataFrame, part_file: str, query_file: st
     return ctx, open(query_file).read()
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# Utility to collect indices from KD-tree (unchanged)
-# ──────────────────────────────────────────────────────────────────────────
 def _collect_indices(kd_tree, brand_map, cont_map) -> Set[int]:
     indices: Set[int] = set()
     for brand, containers, qmin, qmax in SPECS:
@@ -187,28 +169,22 @@ def _collect_indices(kd_tree, brand_map, cont_map) -> Set[int]:
     return indices
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# Main
-# ──────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     os.makedirs(os.path.join(RESULT_DIR, "duckdb"), exist_ok=True)
     os.makedirs(os.path.join(RESULT_DIR, "datafusion"), exist_ok=True)
 
-    # 1.  Build KD-tree & measure sizes
     kd_tree, brand_map, cont_map, enc_bytes, build_secs = build_kd_tree(
         LINEITEM_FILE, PART_FILE, BATCH
     )
     kd_tree_mb = kd_tree.getMemoryUsage() / (1024 * 1024)
-    encoded_mb = enc_bytes / (1024 * 1024)        # 🆕
+    encoded_mb = enc_bytes / (1024 * 1024)     
 
-    # 2.  Look-up + materialise filtered rows
     lookup_metrics = measure_query_execution(
         lambda: _collect_indices(kd_tree, brand_map, cont_map)
     )
     filtered_idx = set(lookup_metrics["result"])
     filtered_df = materialize_filtered_indices(LINEITEM_FILE, filtered_idx, BATCH)
 
-    # 3.  DuckDB
     con, sql_duck = prepare_duckdb(filtered_df, PART_FILE, QUERY_PATH)
     eng_metrics_duck = measure_query_duckdb(19, con, sql_duck)
     combined_duck = aggregate_metrics(lookup_metrics, eng_metrics_duck)
@@ -216,7 +192,7 @@ if __name__ == "__main__":
         {
             "Query": 19,
             "KD Tree Size (MB)": kd_tree_mb,
-            "Encoded Column Size (MB)": encoded_mb,    # 🆕
+            "Original Column Size (MB)": encoded_mb,  
             "KD Tree Creation Time (s)": build_secs,
         }
     )
@@ -226,7 +202,6 @@ if __name__ == "__main__":
         [combined_duck],
     )
 
-    # 4.  DataFusion
     ctx, sql_df = prepare_datafusion(filtered_df, PART_FILE, QUERY_PATH)
     eng_metrics_df = measure_query_datafusion(19, ctx, sql_df)
     combined_df = aggregate_metrics(lookup_metrics, eng_metrics_df)
@@ -234,7 +209,7 @@ if __name__ == "__main__":
         {
             "Query": 19,
             "KD Tree Size (MB)": kd_tree_mb,
-            "Encoded Column Size (MB)": encoded_mb,    # 🆕
+            "Original Column Size (MB)": encoded_mb,   
             "KD Tree Creation Time (s)": build_secs,
         }
     )
