@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <utility>
-#include <emmintrin.h>
+#include <immintrin.h>
 #include <chrono>
 #include <memory>
 

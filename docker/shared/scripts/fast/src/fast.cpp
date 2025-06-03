@@ -75,46 +75,65 @@ inline unsigned FastTree<K>::maskToIndex(unsigned bitmask) const {
 
 template<unsigned K>
 unsigned FastTree<K>::searchInternal(int32_t key_q) const {
-    __m128i xmm_key_q = _mm_set1_epi32(key_q);
-    
+    __m256i ymm_key_q = _mm256_set1_epi32(key_q);
+
     unsigned page_offset = 0;
     unsigned level_offset = 0;
-    
+
     for (unsigned cl_level = 1; cl_level <= 4; cl_level++) {
-        __m128i xmm_tree = _mm_loadu_si128((__m128i*)(tree_data_ + page_offset + level_offset * 16));
-        __m128i xmm_mask = _mm_cmpgt_epi32(xmm_key_q, xmm_tree);
-        unsigned index = _mm_movemask_ps(_mm_castsi128_ps(xmm_mask));
+        __m256i ymm_tree = _mm256_broadcastsi128_si256(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(
+                tree_data_ + page_offset + level_offset * 16))
+        );
+
+        __m256i ymm_mask = _mm256_cmpgt_epi32(ymm_key_q, ymm_tree);
+
+        unsigned mask256 = _mm256_movemask_ps(_mm256_castsi256_ps(ymm_mask));
+        unsigned index = mask256 & 0xF;
+
         unsigned child_index = maskToIndex(index);
-        
-        xmm_tree = _mm_loadu_si128((__m128i*)(tree_data_ + page_offset + level_offset * 16 + 3 + 3 * child_index));
-        xmm_mask = _mm_cmpgt_epi32(xmm_key_q, xmm_tree);
-        index = _mm_movemask_ps(_mm_castsi128_ps(xmm_mask));
-        
-        unsigned cache_offset = child_index * 4 + maskToIndex(index);
+
+        __m256i ymm_tree2 = _mm256_broadcastsi128_si256(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(
+                tree_data_ + page_offset + level_offset * 16 + 3 + 3 * child_index))
+        );
+        __m256i ymm_mask2 = _mm256_cmpgt_epi32(ymm_key_q, ymm_tree2);
+        unsigned mask256_2 = _mm256_movemask_ps(_mm256_castsi256_ps(ymm_mask2));
+        unsigned index2 = mask256_2 & 0xF;
+
+        unsigned cache_offset = child_index * 4 + maskToIndex(index2);
         level_offset = level_offset * 16 + cache_offset;
         page_offset += pow16(cl_level);
     }
-    
+
     unsigned pos = level_offset;
     unsigned offset = 69904 + level_offset * scale_;
     page_offset = 0;
     level_offset = 0;
-    
+
     for (unsigned cl_level = 1; cl_level <= K; cl_level++) {
-        __m128i xmm_tree = _mm_loadu_si128((__m128i*)(tree_data_ + offset + page_offset + level_offset * 16));
-        __m128i xmm_mask = _mm_cmpgt_epi32(xmm_key_q, xmm_tree);
-        unsigned index = _mm_movemask_ps(_mm_castsi128_ps(xmm_mask));
+        __m256i ymm_tree = _mm256_broadcastsi128_si256(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(
+                tree_data_ + offset + page_offset + level_offset * 16))
+        );
+        __m256i ymm_mask = _mm256_cmpgt_epi32(ymm_key_q, ymm_tree);
+        unsigned mask256 = _mm256_movemask_ps(_mm256_castsi256_ps(ymm_mask));
+        unsigned index = mask256 & 0xF;
         unsigned child_index = maskToIndex(index);
-        
-        xmm_tree = _mm_loadu_si128((__m128i*)(tree_data_ + offset + page_offset + level_offset * 16 + 3 + 3 * child_index));
-        xmm_mask = _mm_cmpgt_epi32(xmm_key_q, xmm_tree);
-        index = _mm_movemask_ps(_mm_castsi128_ps(xmm_mask));
-        
-        unsigned cache_offset = child_index * 4 + maskToIndex(index);
+
+        __m256i ymm_tree2 = _mm256_broadcastsi128_si256(
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(
+                tree_data_ + offset + page_offset + level_offset * 16 + 3 + 3 * child_index))
+        );
+        __m256i ymm_mask2 = _mm256_cmpgt_epi32(ymm_key_q, ymm_tree2);
+        unsigned mask256_2 = _mm256_movemask_ps(_mm256_castsi256_ps(ymm_mask2));
+        unsigned index2 = mask256_2 & 0xF;
+
+        unsigned cache_offset = child_index * 4 + maskToIndex(index2);
         level_offset = level_offset * 16 + cache_offset;
         page_offset += pow16(cl_level);
     }
-    
+
     return (pos << (K * 4)) | level_offset;
 }
 
