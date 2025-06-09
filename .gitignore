@@ -9,3 +9,5 @@ docker/shared/scripts/fast/lib/*
 docker/shared/scripts/kdtree/lib/*
 docker/shared/scripts/kdtree/__pycache__/*
 .vscode/*
+docker/shared/data/tpcds/parquet_bigger/*
+
