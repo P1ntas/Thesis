@@ -4591,7 +4591,7 @@ select  cast(amc as decimal(15,4))/cast(pmc as decimal(15,4)) am_pm_ratio
          and ws_web_page_sk = web_page.wp_web_page_sk
          and time_dim.t_hour between 8 and 8+1
          and household_demographics.hd_dep_count = 2
-         and web_page.wp_char_count between 5000 and 5200) at,
+         and web_page.wp_char_count between 5000 and 5200) as am,
       ( select count(*) pmc
        from web_sales, household_demographics , time_dim, web_page
        where ws_sold_time_sk = time_dim.t_time_sk
@@ -4599,7 +4599,7 @@ select  cast(amc as decimal(15,4))/cast(pmc as decimal(15,4)) am_pm_ratio
          and ws_web_page_sk = web_page.wp_web_page_sk
          and time_dim.t_hour between 14 and 14+1
          and household_demographics.hd_dep_count = 2
-         and web_page.wp_char_count between 5000 and 5200) pt
+         and web_page.wp_char_count between 5000 and 5200) as pm
  order by am_pm_ratio
  limit 100;
 
