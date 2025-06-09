@@ -66,7 +66,6 @@ python3 ./fast/fast_8.py
 python3 ./fast/fast_10.py
 python3 ./fast/fast_12.py
 python3 ./fast/fast_14.py
-python3 ./fast/fast_15.py
 python3 ./fast/fast_19.py
 python3 ./fast/fast_20.py
 python3 ./fast/plots_fast.py
