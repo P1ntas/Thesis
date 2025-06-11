@@ -1,58 +1,58 @@
 {
-    "all_optimizers": 0.00042179000000000007,
-    "cumulative_optimizer_timing": 0.00042086400000000007,
-    "planner": 0.0014733959999999999,
-    "planner_binding": 0.001228356,
-    "physical_planner": 0.000056638,
-    "physical_planner_column_binding": 0.000005997,
-    "physical_planner_resolve_types": 0.000001142,
-    "physical_planner_create_plan": 0.000044094,
-    "optimizer_common_subexpressions": 0.000002415,
-    "optimizer_statistics_propagation": 0.000062964,
-    "optimizer_unused_columns": 0.000016457,
-    "optimizer_unnest_rewriter": 0.000001024,
-    "optimizer_deliminator": 0.000001965,
-    "optimizer_join_order": 0.000091252,
-    "optimizer_in_clause": 0.000001431,
-    "optimizer_regex_range": 0.000001104,
-    "optimizer_cte_filter_pusher": 9.87e-7,
-    "optimizer_empty_result_pullup": 9.48e-7,
-    "optimizer_filter_pushdown": 0.000058277,
-    "optimizer_filter_pullup": 0.00000302,
-    "optimizer_expression_rewriter": 0.000098194,
-    "optimizer_common_aggregate": 0.000002866,
-    "optimizer_column_lifetime": 0.000015438,
-    "cumulative_rows_scanned": 60807172,
-    "cumulative_cardinality": 23825319,
+    "all_optimizers": 0.00022967000000000002,
+    "cumulative_optimizer_timing": 0.00022909000000000004,
+    "planner": 0.00040009,
+    "planner_binding": 0.000391,
+    "physical_planner": 0.0000395,
+    "physical_planner_column_binding": 0.00000341,
+    "physical_planner_resolve_types": 6.9e-7,
+    "physical_planner_create_plan": 0.00003246,
+    "optimizer_common_subexpressions": 0.00000146,
+    "optimizer_statistics_propagation": 0.00003889,
+    "optimizer_unused_columns": 0.00001012,
+    "optimizer_unnest_rewriter": 7.2e-7,
+    "optimizer_deliminator": 0.00000137,
+    "optimizer_join_order": 0.00005367,
+    "optimizer_in_clause": 7.9e-7,
+    "optimizer_regex_range": 6.9e-7,
+    "optimizer_cte_filter_pusher": 8.7e-7,
+    "optimizer_empty_result_pullup": 5.7e-7,
+    "optimizer_filter_pushdown": 0.00003548,
+    "optimizer_filter_pullup": 0.00000221,
+    "optimizer_expression_rewriter": 0.00003489,
+    "optimizer_common_aggregate": 0.00000159,
+    "optimizer_column_lifetime": 0.00000895,
+    "cumulative_rows_scanned": 60749954,
+    "cumulative_cardinality": 11941281,
     "extra_info": {},
-    "cpu_time": 0.23899693300000005,
+    "cpu_time": 0.08682662499999994,
     "system_peak_temp_dir_size": 0,
-    "optimizer_reorder_filter": 0.000002324,
-    "system_peak_buffer_memory": 214431744,
-    "optimizer_duplicate_groups": 0.00000447,
+    "optimizer_reorder_filter": 0.00000134,
+    "system_peak_buffer_memory": 112363520,
+    "optimizer_duplicate_groups": 0.0000026,
     "blocked_thread_time": 0.0,
     "optimizer_compressed_materialization": 0.0,
     "query_name": "select\n\to_orderpriority,\n\tcount(*) as order_count\nfrom\n\torders\nwhere\n\to_orderdate >= '1993-07-01'\n\tand o_orderdate < '1993-10-01'\n\tand exists (\n\t\tselect\n\t\t\t*\n\t\tfrom\n\t\t\tlineitem\n\t\twhere\n\t\t\tl_orderkey = o_orderkey\n\t\t\tand l_commitdate < l_receiptdate\n\t)\ngroup by\n\to_orderpriority\norder by\n\to_orderpriority;\n",
     "result_set_size": 120,
-    "optimizer_build_side_probe_side": 0.00001834,
-    "latency": 0.060732163,
-    "optimizer_limit_pushdown": 6.17e-7,
+    "optimizer_build_side_probe_side": 0.00001274,
+    "latency": 0.01716703,
+    "optimizer_limit_pushdown": 4.1e-7,
     "rows_returned": 5,
-    "optimizer_top_n": 7.76e-7,
-    "optimizer_late_materialization": 8.22e-7,
-    "optimizer_sum_rewriter": 0.000015339,
+    "optimizer_top_n": 4e-7,
+    "optimizer_late_materialization": 5.1e-7,
+    "optimizer_sum_rewriter": 0.00000385,
     "optimizer_materialized_cte": 0.0,
     "optimizer_extension": 0.0,
-    "optimizer_join_filter_pushdown": 0.000019373,
-    "optimizer_sampling_pushdown": 4.61e-7,
+    "optimizer_join_filter_pushdown": 0.00001477,
+    "optimizer_sampling_pushdown": 2e-7,
     "children": [
         {
-            "operator_timing": 0.000012102999999999999,
+            "operator_timing": 0.00000781,
             "operator_rows_scanned": 0,
-            "cumulative_rows_scanned": 60807172,
+            "cumulative_rows_scanned": 60749954,
             "operator_cardinality": 5,
             "operator_type": "PROJECTION",
-            "cumulative_cardinality": 23825319,
+            "cumulative_cardinality": 11941281,
             "extra_info": {
                 "Projections": [
                     "__internal_decompress_string(#0)",
@@ -60,31 +60,31 @@
                 ],
                 "Estimated Cardinality": "5"
             },
-            "cpu_time": 0.23899693300000005,
+            "cpu_time": 0.08682662499999994,
             "operator_name": "PROJECTION",
             "result_set_size": 120,
             "children": [
                 {
-                    "operator_timing": 0.0038272639999999995,
+                    "operator_timing": 0.000541773,
                     "operator_rows_scanned": 0,
-                    "cumulative_rows_scanned": 60807172,
+                    "cumulative_rows_scanned": 60749954,
                     "operator_cardinality": 5,
                     "operator_type": "ORDER_BY",
-                    "cumulative_cardinality": 23825314,
+                    "cumulative_cardinality": 11941276,
                     "extra_info": {
                         "Order By": "memory.main.orders.o_orderpriority ASC"
                     },
-                    "cpu_time": 0.23898483000000004,
+                    "cpu_time": 0.08681881499999994,
                     "operator_name": "ORDER_BY",
                     "result_set_size": 120,
                     "children": [
                         {
-                            "operator_timing": 0.0000030940000000000004,
+                            "operator_timing": 0.00000185,
                             "operator_rows_scanned": 0,
-                            "cumulative_rows_scanned": 60807172,
+                            "cumulative_rows_scanned": 60749954,
                             "operator_cardinality": 5,
                             "operator_type": "PROJECTION",
-                            "cumulative_cardinality": 23825309,
+                            "cumulative_cardinality": 11941271,
                             "extra_info": {
                                 "Projections": [
                                     "__internal_compress_string_hugeint(#0)",
@@ -92,17 +92,17 @@
                                 ],
                                 "Estimated Cardinality": "5"
                             },
-                            "cpu_time": 0.23515756600000004,
+                            "cpu_time": 0.08627704199999994,
                             "operator_name": "PROJECTION",
                             "result_set_size": 120,
                             "children": [
                                 {
-                                    "operator_timing": 0.000010208000000000001,
+                                    "operator_timing": 0.0000085,
                                     "operator_rows_scanned": 0,
-                                    "cumulative_rows_scanned": 60807172,
+                                    "cumulative_rows_scanned": 60749954,
                                     "operator_cardinality": 5,
                                     "operator_type": "PROJECTION",
-                                    "cumulative_cardinality": 23825304,
+                                    "cumulative_cardinality": 11941266,
                                     "extra_info": {
                                         "Projections": [
                                             "__internal_decompress_string(#0)",
@@ -110,80 +110,80 @@
                                         ],
                                         "Estimated Cardinality": "5"
                                     },
-                                    "cpu_time": 0.23515447200000003,
+                                    "cpu_time": 0.08627519199999995,
                                     "operator_name": "PROJECTION",
                                     "result_set_size": 120,
                                     "children": [
                                         {
-                                            "operator_timing": 0.004089988,
+                                            "operator_timing": 0.0022889800000000004,
                                             "operator_rows_scanned": 0,
-                                            "cumulative_rows_scanned": 60807172,
+                                            "cumulative_rows_scanned": 60749954,
                                             "operator_cardinality": 5,
                                             "operator_type": "HASH_GROUP_BY",
-                                            "cumulative_cardinality": 23825299,
+                                            "cumulative_cardinality": 11941261,
                                             "extra_info": {
                                                 "Groups": "#0",
                                                 "Aggregates": "count_star()",
                                                 "Estimated Cardinality": "5"
                                             },
-                                            "cpu_time": 0.23514426400000002,
+                                            "cpu_time": 0.08626669199999995,
                                             "operator_name": "HASH_GROUP_BY",
                                             "result_set_size": 120,
                                             "children": [
                                                 {
-                                                    "operator_timing": 0.000007731000000000001,
+                                                    "operator_timing": 0.00000197,
                                                     "operator_rows_scanned": 0,
-                                                    "cumulative_rows_scanned": 60807172,
-                                                    "operator_cardinality": 105046,
+                                                    "cumulative_rows_scanned": 60749954,
+                                                    "operator_cardinality": 52523,
                                                     "operator_type": "PROJECTION",
-                                                    "cumulative_cardinality": 23825294,
+                                                    "cumulative_cardinality": 11941256,
                                                     "extra_info": {
                                                         "Projections": "o_orderpriority",
-                                                        "Estimated Cardinality": "4577"
+                                                        "Estimated Cardinality": "2288"
                                                     },
-                                                    "cpu_time": 0.23105427600000003,
+                                                    "cpu_time": 0.08397771199999995,
                                                     "operator_name": "PROJECTION",
-                                                    "result_set_size": 1680736,
+                                                    "result_set_size": 840368,
                                                     "children": [
                                                         {
-                                                            "operator_timing": 0.001130989,
+                                                            "operator_timing": 0.00030339099999999997,
                                                             "operator_rows_scanned": 0,
-                                                            "cumulative_rows_scanned": 60807172,
-                                                            "operator_cardinality": 105046,
+                                                            "cumulative_rows_scanned": 60749954,
+                                                            "operator_cardinality": 52523,
                                                             "operator_type": "PROJECTION",
-                                                            "cumulative_cardinality": 23720248,
+                                                            "cumulative_cardinality": 11888733,
                                                             "extra_info": {
                                                                 "Projections": "__internal_compress_string_hugeint(#0)",
-                                                                "Estimated Cardinality": "4577"
+                                                                "Estimated Cardinality": "2288"
                                                             },
-                                                            "cpu_time": 0.23104654500000002,
+                                                            "cpu_time": 0.08397574199999995,
                                                             "operator_name": "PROJECTION",
-                                                            "result_set_size": 1680736,
+                                                            "result_set_size": 840368,
                                                             "children": [
                                                                 {
-                                                                    "operator_timing": 0.011077958000000002,
+                                                                    "operator_timing": 0.003966933000000001,
                                                                     "operator_rows_scanned": 0,
-                                                                    "cumulative_rows_scanned": 60807172,
+                                                                    "cumulative_rows_scanned": 60749954,
                                                                     "operator_cardinality": 0,
                                                                     "operator_type": "RIGHT_DELIM_JOIN",
-                                                                    "cumulative_cardinality": 23615202,
+                                                                    "cumulative_cardinality": 11836210,
                                                                     "extra_info": {
                                                                         "Join Type": "RIGHT_SEMI",
                                                                         "Conditions": "o_orderkey IS NOT DISTINCT FROM o_orderkey",
-                                                                        "Estimated Cardinality": "4577",
+                                                                        "Estimated Cardinality": "2288",
                                                                         "Delim Index": "1"
                                                                     },
-                                                                    "cpu_time": 0.22991555600000002,
+                                                                    "cpu_time": 0.08367235099999995,
                                                                     "operator_name": "RIGHT_DELIM_JOIN",
                                                                     "result_set_size": 0,
                                                                     "children": [
                                                                         {
-                                                                            "operator_timing": 0.0013057169999999996,
-                                                                            "operator_rows_scanned": 114436,
-                                                                            "cumulative_rows_scanned": 114436,
-                                                                            "operator_cardinality": 114436,
+                                                                            "operator_timing": 0.00036338,
+                                                                            "operator_rows_scanned": 57218,
+                                                                            "cumulative_rows_scanned": 57218,
+                                                                            "operator_cardinality": 57218,
                                                                             "operator_type": "TABLE_SCAN",
-                                                                            "cumulative_cardinality": 114436,
+                                                                            "cumulative_cardinality": 57218,
                                                                             "extra_info": {
                                                                                 "Table": "orders",
                                                                                 "Type": "Sequential Scan",
@@ -191,97 +191,97 @@
                                                                                     "o_orderkey",
                                                                                     "o_orderpriority"
                                                                                 ],
-                                                                                "Estimated Cardinality": "22887"
+                                                                                "Estimated Cardinality": "11443"
                                                                             },
-                                                                            "cpu_time": 0.0013057169999999996,
+                                                                            "cpu_time": 0.00036338,
                                                                             "operator_name": "SEQ_SCAN ",
-                                                                            "result_set_size": 2746464,
+                                                                            "result_set_size": 1373232,
                                                                             "children": []
                                                                         },
                                                                         {
-                                                                            "operator_timing": 0.024611447000000005,
+                                                                            "operator_timing": 0.006097493,
                                                                             "operator_rows_scanned": 0,
                                                                             "cumulative_rows_scanned": 60692736,
-                                                                            "operator_cardinality": 105046,
+                                                                            "operator_cardinality": 52523,
                                                                             "operator_type": "HASH_JOIN",
-                                                                            "cumulative_cardinality": 23443548,
+                                                                            "cumulative_cardinality": 11721774,
                                                                             "extra_info": {
                                                                                 "Join Type": "RIGHT_SEMI",
                                                                                 "Conditions": "o_orderkey IS NOT DISTINCT FROM o_orderkey",
-                                                                                "Estimated Cardinality": "4577"
+                                                                                "Estimated Cardinality": "2288"
                                                                             },
-                                                                            "cpu_time": 0.21103021800000002,
+                                                                            "cpu_time": 0.06960977599999994,
                                                                             "operator_name": "HASH_JOIN",
-                                                                            "result_set_size": 1680736,
+                                                                            "result_set_size": 840368,
                                                                             "children": [
                                                                                 {
-                                                                                    "operator_timing": 0.001752271,
+                                                                                    "operator_timing": 0.00038129,
                                                                                     "operator_rows_scanned": 0,
                                                                                     "cumulative_rows_scanned": 60692736,
-                                                                                    "operator_cardinality": 289738,
+                                                                                    "operator_cardinality": 144869,
                                                                                     "operator_type": "PROJECTION",
-                                                                                    "cumulative_cardinality": 23338502,
+                                                                                    "cumulative_cardinality": 11669251,
                                                                                     "extra_info": {
                                                                                         "Projections": "o_orderkey",
-                                                                                        "Estimated Cardinality": "41626"
+                                                                                        "Estimated Cardinality": "15202"
                                                                                     },
-                                                                                    "cpu_time": 0.186418771,
+                                                                                    "cpu_time": 0.06351228299999995,
                                                                                     "operator_name": "PROJECTION",
-                                                                                    "result_set_size": 2317904,
+                                                                                    "result_set_size": 1158952,
                                                                                     "children": [
                                                                                         {
-                                                                                            "operator_timing": 0.153731822,
+                                                                                            "operator_timing": 0.05056123399999995,
                                                                                             "operator_rows_scanned": 0,
                                                                                             "cumulative_rows_scanned": 60692736,
-                                                                                            "operator_cardinality": 289738,
+                                                                                            "operator_cardinality": 144869,
                                                                                             "operator_type": "HASH_JOIN",
-                                                                                            "cumulative_cardinality": 23048764,
+                                                                                            "cumulative_cardinality": 11524382,
                                                                                             "extra_info": {
                                                                                                 "Join Type": "INNER",
                                                                                                 "Conditions": "l_orderkey = o_orderkey",
-                                                                                                "Estimated Cardinality": "41626"
+                                                                                                "Estimated Cardinality": "15202"
                                                                                             },
-                                                                                            "cpu_time": 0.1846665,
+                                                                                            "cpu_time": 0.06313099299999994,
                                                                                             "operator_name": "HASH_JOIN",
-                                                                                            "result_set_size": 4635808,
+                                                                                            "result_set_size": 2317904,
                                                                                             "children": [
                                                                                                 {
-                                                                                                    "operator_timing": 0.001052313,
+                                                                                                    "operator_timing": 0.00023548000000000031,
                                                                                                     "operator_rows_scanned": 0,
                                                                                                     "cumulative_rows_scanned": 60692736,
-                                                                                                    "operator_cardinality": 7586342,
+                                                                                                    "operator_cardinality": 3793171,
                                                                                                     "operator_type": "PROJECTION",
-                                                                                                    "cumulative_cardinality": 22759026,
+                                                                                                    "cumulative_cardinality": 11379513,
                                                                                                     "extra_info": {
                                                                                                         "Projections": "#0",
-                                                                                                        "Estimated Cardinality": "1517318"
+                                                                                                        "Estimated Cardinality": "758659"
                                                                                                     },
-                                                                                                    "cpu_time": 0.030934678000000007,
+                                                                                                    "cpu_time": 0.012569759,
                                                                                                     "operator_name": "PROJECTION",
-                                                                                                    "result_set_size": 60690736,
+                                                                                                    "result_set_size": 30345368,
                                                                                                     "children": [
                                                                                                         {
-                                                                                                            "operator_timing": 0.017110344000000006,
+                                                                                                            "operator_timing": 0.008874795999999999,
                                                                                                             "operator_rows_scanned": 0,
                                                                                                             "cumulative_rows_scanned": 60692736,
-                                                                                                            "operator_cardinality": 7586342,
+                                                                                                            "operator_cardinality": 3793171,
                                                                                                             "operator_type": "FILTER",
-                                                                                                            "cumulative_cardinality": 15172684,
+                                                                                                            "cumulative_cardinality": 7586342,
                                                                                                             "extra_info": {
                                                                                                                 "Expression": "(l_commitdate < l_receiptdate)",
-                                                                                                                "Estimated Cardinality": "1517318"
+                                                                                                                "Estimated Cardinality": "758659"
                                                                                                             },
-                                                                                                            "cpu_time": 0.029882365000000008,
+                                                                                                            "cpu_time": 0.012334279,
                                                                                                             "operator_name": "FILTER",
-                                                                                                            "result_set_size": 121381472,
+                                                                                                            "result_set_size": 60690736,
                                                                                                             "children": [
                                                                                                                 {
-                                                                                                                    "operator_timing": 0.012772021000000001,
+                                                                                                                    "operator_timing": 0.003459483,
                                                                                                                     "operator_rows_scanned": 60692736,
                                                                                                                     "cumulative_rows_scanned": 60692736,
-                                                                                                                    "operator_cardinality": 7586342,
+                                                                                                                    "operator_cardinality": 3793171,
                                                                                                                     "operator_type": "TABLE_SCAN",
-                                                                                                                    "cumulative_cardinality": 7586342,
+                                                                                                                    "cumulative_cardinality": 3793171,
                                                                                                                     "extra_info": {
                                                                                                                         "Table": "lineitem",
                                                                                                                         "Type": "Sequential Scan",
@@ -290,11 +290,11 @@
                                                                                                                             "l_commitdate",
                                                                                                                             "l_receiptdate"
                                                                                                                         ],
-                                                                                                                        "Estimated Cardinality": "7586592"
+                                                                                                                        "Estimated Cardinality": "3793296"
                                                                                                                     },
-                                                                                                                    "cpu_time": 0.012772021000000001,
+                                                                                                                    "cpu_time": 0.003459483,
                                                                                                                     "operator_name": "SEQ_SCAN ",
-                                                                                                                    "result_set_size": 121381472,
+                                                                                                                    "result_set_size": 60690736,
                                                                                                                     "children": []
                                                                                                                 }
                                                                                                             ]
@@ -310,7 +310,7 @@
                                                                                                     "cumulative_cardinality": 0,
                                                                                                     "extra_info": {
                                                                                                         "Delim Index": "1",
-                                                                                                        "Estimated Cardinality": "17030"
+                                                                                                        "Estimated Cardinality": "10371"
                                                                                                     },
                                                                                                     "cpu_time": 0.0,
                                                                                                     "operator_name": "DELIM_SCAN",
@@ -337,7 +337,7 @@
                                                                             ]
                                                                         },
                                                                         {
-                                                                            "operator_timing": 0.006501663,
+                                                                            "operator_timing": 0.009732262000000002,
                                                                             "operator_rows_scanned": 0,
                                                                             "cumulative_rows_scanned": 0,
                                                                             "operator_cardinality": 57218,
@@ -346,9 +346,9 @@
                                                                             "extra_info": {
                                                                                 "Groups": "#0",
                                                                                 "Aggregates": "",
-                                                                                "Estimated Cardinality": "17030"
+                                                                                "Estimated Cardinality": "10371"
                                                                             },
-                                                                            "cpu_time": 0.006501663,
+                                                                            "cpu_time": 0.009732262000000002,
                                                                             "operator_name": "HASH_GROUP_BY",
                                                                             "result_set_size": 457744,
                                                                             "children": []
